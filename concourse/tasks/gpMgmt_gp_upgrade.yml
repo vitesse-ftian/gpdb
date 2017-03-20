@@ -1,0 +1,10 @@
+platform: linux
+image_resource:
+  type: docker-image
+inputs:
+  - name: gpdb_src
+  - name: bin_gpdb
+outputs:
+params:
+run:
+  path: gpdb_src/concourse/scripts/gpMgmt_gp_upgrade.bash

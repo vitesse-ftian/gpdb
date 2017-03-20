@@ -137,6 +137,7 @@ groups:
   - MM_gppkg
   - MM_pt-rebuild
   - MU_check_centos
+  - MM_gp_upgrade
   - gate_mm_end
 {% endif %}
 {% if "DPM" in test_sections %}
@@ -297,6 +298,7 @@ groups:
   - MM_gppkg
   - MM_pt-rebuild
   - MU_check_centos
+  - MM_gp_upgrade
   - gate_mm_end
 
 {% endif %}
@@ -2467,6 +2469,20 @@ jobs:
     <<: *set_failed
 
 {% endfor %}
+- name: MM_gp_upgrade
+  plan:
+  - aggregate:
+    - get: gpdb_src
+      passed: [gate_mm_start]
+    - get: bin_gpdb
+      resource: bin_gpdb_centos6
+      passed: [gate_mm_start]
+      trigger: [[ test_trigger ]]
+    - get: centos-gpdb-dev-6
+  - task: MM_gp_upgrade
+    file: gpdb_src/concourse/tasks/gpMgmt_gp_upgrade.yml
+    image: centos-gpdb-dev-6
+
 - name: gate_mm_end
   plan:
   - aggregate:
@@ -2481,7 +2497,7 @@ jobs:
       - MM_gppkg
       - MM_pt-rebuild
       - MU_check_centos
-      
+      - MM_gp_upgrade
       trigger: true
 
 {% endif %}
@@ -3036,6 +3052,7 @@ jobs:
     - MM_gppkg
     - MM_pt-rebuild
     - MU_check_centos
+    - MM_gp_upgrade
     - DPM_gptransfer_43x_to_master
     - DPM_gptransfer
     - mpp_interconnect
