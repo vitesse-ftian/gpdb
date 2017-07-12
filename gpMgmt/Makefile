@@ -51,7 +51,10 @@ SET_VERSION_SCRIPTS = \
 	lib/python/gppylib/mainUtils.py \
 	$(NULL)
 
-set_scripts_version : 
+all :
+	$(MAKE) -C go-utils $@
+
+set_scripts_version :
 	@for file in $(SET_VERSION_SCRIPTS); do \
 	    if [ -f $(DESTDIR)$(prefix)/$${file} ]; then \
 	        perl $(top_builddir)/putversion $(DESTDIR)$(prefix)/$${file} ; \
@@ -110,6 +113,7 @@ install: generate_greenplum_path_file
 #endif
 
 	$(MAKE) -C sbin $@ prefix=$(DESTDIR)$(prefix)
+	$(MAKE) -C go-utils $@
 
 	cp $(top_builddir)/src/test/regress/*.pl $(DESTDIR)$(prefix)/bin
 	cp $(top_builddir)/src/test/regress/*.pm $(DESTDIR)$(prefix)/bin
@@ -138,3 +142,5 @@ install: generate_greenplum_path_file
 clean distclean:
 	$(MAKE) -C bin $@
 	$(MAKE) -C sbin $@
+	@$(MAKE) -C go-utils $@
+
