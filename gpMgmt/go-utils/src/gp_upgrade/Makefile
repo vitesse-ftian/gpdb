@@ -23,6 +23,7 @@ dependencies :
 		go get golang.org/x/crypto/ssh
 		go get -u github.com/golang/lint/golint
 		go get github.com/alecthomas/gometalinter
+		go get github.com/golang/protobuf/protoc-gen-go
 		go get
 # Counterfeiter is not a proper dependency of the app. It is only used occasionally to generate a test class that
 # is then checked in.  At the time of that generation, it can be added back to run the dependency list, temporarily.
@@ -47,8 +48,14 @@ integration:
 
 test : lint unit integration
 
+protobuf :
+		protoc -I idl/ idl/*.proto --go_out=plugins=grpc:idl
+
 build :
 		go build -ldflags "-X gp_upgrade/commands.GpdbVersion=$(GPDB_VERSION)" -o $(GO_UTILS_DIR)/bin/$(MODULE_NAME)
+		go build -ldflags "-X gp_upgrade/commands.GpdbVersion=$(GPDB_VERSION)" -o $(GO_UTILS_DIR)/bin/command_listener $(MODULE_NAME)/commandListener
+		go build -ldflags "-X gp_upgrade/commands.GpdbVersion=$(GPDB_VERSION)" -o $(GO_UTILS_DIR)/bin/command_sample $(MODULE_NAME)/commandSample
+
 
 coverage: build
 		./scripts/run_coverage.sh

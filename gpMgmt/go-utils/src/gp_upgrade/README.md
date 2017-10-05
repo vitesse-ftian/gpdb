@@ -8,9 +8,9 @@
 - For GOPATH, in the Makefile, we set a combination path, with the default ~/go as the first entry, 
 and the path to go-utils/ as the second entry. This allows all dependencies to be download by "go get"
 into the ~/go/ directory, away from the gpdb/ sources. See the
-  [overall go-utils README](../../README.md) for more information
-
-You can run `make dependencies` to download them.
+  [overall go-utils README](../../README.md) for more information.
+- protoc This is the compiler for the [gRPC protobuffer](https://grpc.io/) system. 
+On macos, one way to install this is via `brew install protobuf`   
 
 ### Build and test the upgrade tool
 
