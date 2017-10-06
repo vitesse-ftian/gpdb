@@ -1,7 +1,7 @@
 package sshClient
 
 import (
-	"errors"
+	"github.com/pkg/errors"
 	"os"
 	"path"
 	"path/filepath"

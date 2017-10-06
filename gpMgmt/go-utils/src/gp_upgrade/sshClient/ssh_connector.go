@@ -7,7 +7,7 @@ import (
 
 	"net"
 
-	"errors"
+	"github.com/pkg/errors"
 	"io"
 
 	"golang.org/x/crypto/ssh"

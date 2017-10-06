@@ -6,26 +6,24 @@ import (
 	"gp_upgrade/db"
 
 	"gp_upgrade/utils"
-
-	"github.com/pkg/errors"
 )
 
 type CheckCommand struct {
 	ObjectCount ObjectCountCommand  `command:"object-count" alias:"oc" description:"count database objects and numeric objects"`
 	GPDBVersion CheckVersionCommand `command:"version" alias:"ver" description:"validate current version is upgradable"`
 
-	MasterHost string `long:"master-host" required:"no" description:"Domain name or IP of host"`
-	MasterPort int    `long:"master-port" required:"no" default:"15432" description:"Port for master database"`
+	MasterHost string
+	MasterPort int
+}
+
+func NewCheckCommand(host string, port int) CheckCommand {
+	return CheckCommand{
+		MasterHost: host,
+		MasterPort: port,
+	}
 }
 
 func (cmd CheckCommand) Execute([]string) error {
-	// to work around a bug in go-flags, where an attribute is required in both parent and child command,
-	// we make that attribute optional in the command struct used by go-flags
-	// but enforce the requirement in our code here.
-	if cmd.MasterHost == "" {
-		return errors.New("the required flag '--master-host' was not specified")
-	}
-
 	dbConn := db.NewDBConn(cmd.MasterHost, cmd.MasterPort, "template1")
 	return cmd.execute(dbConn, config.NewWriter())
 }

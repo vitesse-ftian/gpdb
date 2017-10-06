@@ -11,7 +11,7 @@ import (
 
 	"os"
 
-	"errors"
+	"github.com/pkg/errors"
 	"strings"
 
 	"log"

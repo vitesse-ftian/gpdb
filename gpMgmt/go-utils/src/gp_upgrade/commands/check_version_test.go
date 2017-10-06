@@ -3,7 +3,7 @@ package commands
 import (
 	"database/sql/driver"
 
-	"errors"
+	"github.com/pkg/errors"
 
 	"gp_upgrade/db"
 

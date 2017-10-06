@@ -8,25 +8,78 @@ import (
 	"gp_upgrade/db"
 	"os"
 
-	"errors"
+	"github.com/pkg/errors"
 	"gp_upgrade/utils"
 	"strings"
 )
 
 type ObjectCountCommand struct {
-	MasterHost string `long:"master-host" required:"yes" description:"Domain name or IP address of the master node"`
-	MasterPort int    `long:"master-port" required:"no" default:"15432" description:"Port for the master node"`
+	MasterHost    string
+	MasterPort    int
+	dbConnFactory DbConnectionFactory
+}
+
+type DbConnectionFactory interface {
+	NewDBConn(masterHost string, masterPort int, dbname string) db.Connector
+}
+
+func NewObjectCountCommand(masterhost string, port int, factory DbConnectionFactory) ObjectCountCommand {
+	return ObjectCountCommand{
+		MasterHost: masterhost,
+		MasterPort: port,
+		dbConnFactory: factory,
+	}
+}
+
+type RealDbConnectionFactory struct{}
+
+func (RealDbConnectionFactory) NewDBConn(masterHost string, masterPort int, dbname string) db.Connector {
+	return db.NewDBConn(masterHost, masterPort, dbname)
 }
 
 // The Execute() function connects to the specified host and executes queries to print the number of user Append-Only
 // and Heap relations in the "template1" database.
 func (cmd ObjectCountCommand) Execute([]string) error {
-
-	dbConn := db.NewDBConn(cmd.MasterHost, cmd.MasterPort, "template1")
-	return cmd.execute(dbConn, os.Stdout)
+	dbConn := cmd.dbConnFactory.NewDBConn(cmd.MasterHost, cmd.MasterPort, "template1")
+	return cmd.executeAll(dbConn, os.Stdout)
 }
 
-func (cmd ObjectCountCommand) execute(dbConnector db.Connector, outputWriter io.Writer) error {
+func (cmd ObjectCountCommand) executeAll(dbConnector db.Connector, outputWriter io.Writer) error {
+	// iterate
+	//s := "select datname from pg_database ;";
+	err := dbConnector.Connect()
+	if err != nil {
+		return utils.DatabaseConnectionError{Parent: err}
+	}
+
+	connection := dbConnector.GetConn()
+	rows, err := connection.Query("SELECT datname FROM pg_database WHERE datname != 'template0'")
+	if err != nil {
+		errWithoutPq := errors.New(strings.TrimLeft(err.Error(), "pq: "))
+		return fmt.Errorf("ERROR: [check object-count] %v", errWithoutPq)
+	}
+
+	names := make([]string, 0)
+
+	var name string
+	for rows.Next() {
+		err = rows.Scan(&name)
+		names = append(names, name)
+	}
+	dbConnector.Close()
+
+	for i := 0; i < len(names); i++ {
+		dbConn := cmd.dbConnFactory.NewDBConn(cmd.MasterHost, cmd.MasterPort, names[i])
+		err = cmd.executeSingleDatabase(dbConn, outputWriter)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (cmd ObjectCountCommand) executeSingleDatabase(dbConnector db.Connector, outputWriter io.Writer) error {
 
 	err := dbConnector.Connect()
 	if err != nil {

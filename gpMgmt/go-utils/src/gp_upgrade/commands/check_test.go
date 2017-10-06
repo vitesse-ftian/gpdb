@@ -5,7 +5,7 @@ import (
 	"gp_upgrade/testUtils"
 
 	"encoding/json"
-	"errors"
+	"github.com/pkg/errors"
 	"gp_upgrade/config"
 	"io/ioutil"
 	"os"

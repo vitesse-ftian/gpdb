@@ -1,7 +1,7 @@
 package commands
 
 import (
-	"errors"
+	"github.com/pkg/errors"
 	"testing"
 
 	"github.com/jmoiron/sqlx"

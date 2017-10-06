@@ -7,7 +7,7 @@ import (
 
 	"bytes"
 
-	"errors"
+	"github.com/pkg/errors"
 
 	"path"
 	"runtime"
