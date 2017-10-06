@@ -5,7 +5,7 @@ import (
 	"runtime/debug"
 
 	"github.com/jessevdk/go-flags"
-	"gp_upgrade/services"
+	"gp_upgrade/commandListener/services"
 	"gp_upgrade/utils"
 )
 

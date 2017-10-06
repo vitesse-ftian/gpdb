@@ -9,8 +9,8 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"gp_upgrade/commandListener/services"
 	"gp_upgrade/idl"
-	"gp_upgrade/services"
 )
 
 var _ = Describe("CommandListenerManager", func() {

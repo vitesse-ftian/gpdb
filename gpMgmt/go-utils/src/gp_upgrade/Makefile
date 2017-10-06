@@ -31,11 +31,9 @@ dependencies :
 #		go get github.com/maxbrunsfeld/counterfeiter
 
 format :
-		goimports -w .
-		go fmt .
+		gofmt -s -w .
 
 lint :
-		! gofmt -l . | read
 		gometalinter --config=gometalinter.config ./...
 
 unit :
@@ -47,7 +45,7 @@ sshd_build :
 integration:
 		ginkgo -r -randomizeAllSpecs -race integrations
 
-test : lint unit integration
+test : format lint unit integration
 
 protobuf :
 		protoc -I idl/ idl/*.proto --go_out=plugins=grpc:idl
