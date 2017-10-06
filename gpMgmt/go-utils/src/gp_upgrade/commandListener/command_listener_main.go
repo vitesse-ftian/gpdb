@@ -1,29 +1,26 @@
 package main
 
 import (
-	"log"
-	"net"
+	"os"
+	"runtime/debug"
 
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/reflection"
-	pb "gp_upgrade/idl"
+	"github.com/jessevdk/go-flags"
 	"gp_upgrade/services"
+	"gp_upgrade/utils"
 )
 
-const (
-	port = ":6416"
-)
+type ServiceCommands struct {
+	Start services.CommandListenerStartCommand `command:"start" alias:"m" description:"Start the Command Listener (blocks)"`
+}
+
+var AllServices ServiceCommands
 
 func main() {
-	lis, err := net.Listen("tcp", port)
+	debug.SetTraceback("all")
+	parser := flags.NewParser(&AllServices, flags.HelpFlag|flags.PrintErrors)
+
+	_, err := parser.Parse()
 	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
-	}
-	myServer := grpc.NewServer()
-	myImpl := services.NewCommandListener("foo")
-	pb.RegisterCommandListenerServer(myServer, myImpl)
-	reflection.Register(myServer)
-	if err := myServer.Serve(lis); err != nil {
-		log.Fatalf("failed to serve: %v", err)
+		os.Exit(utils.GetExitCodeForError(err))
 	}
 }

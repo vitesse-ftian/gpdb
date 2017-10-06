@@ -15,6 +15,7 @@ GPDB_VERSION := $(shell ../../../../getversion --short)
 all : dependencies build
 
 dependencies :
+		go get -d github.com/greenplum-db/gpbackup/utils
 		go get github.com/cppforlife/go-semi-semantic/version
 		go get github.com/onsi/ginkgo/ginkgo
 		go get golang.org/x/tools/cmd/goimports
