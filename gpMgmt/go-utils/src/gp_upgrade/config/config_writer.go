@@ -4,6 +4,7 @@ import (
 	"os"
 
 	"encoding/json"
+	"github.com/pkg/errors"
 	"gp_upgrade/utils"
 )
 
@@ -34,32 +35,35 @@ func (configWriter *Writer) Load(rows utils.RowsWrapper) error {
 func (configWriter Writer) Write() error {
 	jsonData, err := json.Marshal(configWriter.TableJSONData)
 	if err != nil {
-		return err
+		return errors.New(err.Error())
 	}
 
 	pretty, err := configWriter.Formatter.Format(jsonData)
 	if err != nil {
-		return err
+		return errors.New(err.Error())
 	}
 
 	err = os.MkdirAll(GetConfigDir(), 0700)
 	if err != nil {
-		return err
+		return errors.New(err.Error())
 	}
 	f, err := os.Create(GetConfigFilePath())
 	if err != nil {
-		return err
+		return errors.New(err.Error())
 	}
 	defer f.Close()
 
 	err = configWriter.FileWriter.Write(f, pretty)
-	return err
+	if err != nil {
+		return errors.New(err.Error())
+	}
+	return nil
 }
 
 func translateColumnsIntoGenericStructure(rows utils.RowsWrapper) ([]map[string]interface{}, error) {
 	columns, err := rows.Columns()
 	if err != nil {
-		return nil, err
+		return nil, errors.New(err.Error())
 	}
 	count := len(columns)
 	tableData := make([]map[string]interface{}, 0)
@@ -71,7 +75,7 @@ func translateColumnsIntoGenericStructure(rows utils.RowsWrapper) ([]map[string]
 		}
 		err = rows.Scan(valuePtrs...)
 		if err != nil {
-			return nil, err
+			return nil, errors.New(err.Error())
 		}
 		entry := make(map[string]interface{})
 		for i, col := range columns {

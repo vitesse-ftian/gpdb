@@ -32,7 +32,7 @@ type RealSSHConnector struct {
 func NewSSHConnector(privateKeyPath string) (SSHConnector, error) {
 	privateKey, err := NewPrivateKeyGuarantor().Check(privateKeyPath)
 	if err != nil {
-		return nil, err
+		return nil, errors.New(err.Error())
 	}
 
 	return &RealSSHConnector{
@@ -45,7 +45,7 @@ func NewSSHConnector(privateKeyPath string) (SSHConnector, error) {
 func (ssh_connector *RealSSHConnector) ConnectAndExecute(host string, port int, user string, command string) (string, error) {
 	session, err := ssh_connector.Connect(host, port, user)
 	if err != nil {
-		return "", err
+		return "", errors.New(err.Error())
 	}
 
 	// pgrep could be used, but it was messy because of exit code 1 when not found;
@@ -65,11 +65,11 @@ func (ssh_connector *RealSSHConnector) ConnectAndExecute(host string, port int, 
 func (ssh_connector *RealSSHConnector) Connect(Host string, Port int, user string) (SSHSession, error) {
 	pemBytes, err := ioutil.ReadFile(ssh_connector.PrivateKeyPath)
 	if err != nil {
-		return nil, err
+		return nil, errors.New(err.Error())
 	}
 	signer, err := ssh_connector.SSHKeyParser.ParsePrivateKey(pemBytes)
 	if err != nil {
-		return nil, err
+		return nil, errors.New(err.Error())
 	}
 	config := &ssh.ClientConfig{
 		User:            user,
@@ -79,11 +79,11 @@ func (ssh_connector *RealSSHConnector) Connect(Host string, Port int, user strin
 	hostAndPort := fmt.Sprintf("%s:%v", Host, Port)
 	client, err := ssh_connector.SSHDialer.Dial("tcp", hostAndPort, config)
 	if err != nil {
-		return nil, err
+		return nil, errors.New(err.Error())
 	}
 	session, err := client.NewSession()
 	if err != nil {
-		return nil, err
+		return nil, errors.New(err.Error())
 	}
 	return session, nil
 }

@@ -25,8 +25,8 @@ type DbConnectionFactory interface {
 
 func NewObjectCountCommand(masterhost string, port int, factory DbConnectionFactory) ObjectCountCommand {
 	return ObjectCountCommand{
-		MasterHost: masterhost,
-		MasterPort: port,
+		MasterHost:    masterhost,
+		MasterPort:    port,
 		dbConnFactory: factory,
 	}
 }
@@ -70,9 +70,10 @@ func (cmd ObjectCountCommand) executeAll(dbConnector db.Connector, outputWriter 
 
 	for i := 0; i < len(names); i++ {
 		dbConn := cmd.dbConnFactory.NewDBConn(cmd.MasterHost, cmd.MasterPort, names[i])
+		fmt.Println("Checking object counts in database: " + names[i])
 		err = cmd.executeSingleDatabase(dbConn, outputWriter)
 		if err != nil {
-			return err
+			return errors.New(err.Error())
 		}
 	}
 
@@ -89,11 +90,14 @@ func (cmd ObjectCountCommand) executeSingleDatabase(dbConnector db.Connector, ou
 
 	err = cmd.executeQuery(dbConnector, AO_CO_TABLE_QUERY_COUNT, "AO", outputWriter)
 	if err != nil {
-		return err
+		return errors.New(err.Error())
 	}
 	err = cmd.executeQuery(dbConnector, HEAP_TABLE_QUERY_COUNT, "heap", outputWriter)
+	if err != nil {
+		return errors.New(err.Error())
+	}
 
-	return err
+	return nil
 }
 
 func (cmd ObjectCountCommand) executeQuery(dbConnector db.Connector, query string, objectType string, outputWriter io.Writer) error {

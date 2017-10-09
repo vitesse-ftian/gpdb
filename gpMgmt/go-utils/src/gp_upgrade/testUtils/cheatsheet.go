@@ -3,6 +3,7 @@ package testUtils
 import (
 	"bufio"
 	"encoding/gob"
+	"github.com/pkg/errors"
 	"os"
 )
 
@@ -30,12 +31,12 @@ func (cheatSheet CheatSheet) WriteToFile() {
 
 func (cheatSheet *CheatSheet) ReadFromFile() error {
 	if _, err := os.Stat(CHEAT_SHEET_FILE); os.IsNotExist(err) {
-		return err
+		return errors.New(err.Error())
 	}
 
 	f, err := os.Open(CHEAT_SHEET_FILE)
 	if err != nil {
-		return err
+		return errors.New(err.Error())
 	}
 	defer f.Close()
 

@@ -53,7 +53,7 @@ var _ = Describe("monitor", func() {
 			cheatSheet := CheatSheet{Response: GREP_PG_UPGRADE, ReturnCode: intToBytes(0)}
 			cheatSheet.WriteToFile()
 
-			session := runCommand("monitor", "--host", "localhost", "--segment-id", "7", "--port", "2022", "--private_key", private_key_path, "--user", "pivotal")
+			session := runCommand("monitor", "--host", "localhost", "--segment-id", "7", "--port", "2022", "--private-key", private_key_path, "--user", "pivotal")
 
 			Eventually(session).Should(Exit(0))
 			Eventually(session.Out).Should(Say(fmt.Sprintf(`pg_upgrade state - active {"segment_id":%d,"host":"%s"}`, 7, "localhost")))
@@ -65,7 +65,7 @@ var _ = Describe("monitor", func() {
 			session := runCommand("monitor")
 
 			Eventually(session).Should(Exit(1))
-			Eventually(session.Err).Should(Say("the required flags `--host' and `--segment-id' were not specified"))
+			Eventually(session.Err).Should(Say("the required flag '--host' was not specified"))
 		})
 	})
 

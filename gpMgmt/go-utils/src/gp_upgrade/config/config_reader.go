@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/json"
+	"github.com/pkg/errors"
 	"io/ioutil"
 )
 
@@ -12,10 +13,13 @@ type Reader struct {
 func (reader *Reader) Read() error {
 	contents, err := ioutil.ReadFile(GetConfigFilePath())
 	if err != nil {
-		return err
+		return errors.New(err.Error())
 	}
 	err = json.Unmarshal([]byte(contents), &reader.config)
-	return err
+	if err != nil {
+		return errors.New(err.Error())
+	}
+	return nil
 }
 
 // returns -1 for not found

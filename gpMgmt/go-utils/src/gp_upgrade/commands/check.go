@@ -5,15 +5,15 @@ import (
 
 	"gp_upgrade/db"
 
+	"github.com/pkg/errors"
 	"gp_upgrade/utils"
 )
 
 type CheckCommand struct {
-	ObjectCount ObjectCountCommand  `command:"object-count" alias:"oc" description:"count database objects and numeric objects"`
-	GPDBVersion CheckVersionCommand `command:"version" alias:"ver" description:"validate current version is upgradable"`
-
-	MasterHost string
-	MasterPort int
+	ObjectCount ObjectCountCommand
+	GPDBVersion CheckVersionCommand
+	MasterHost  string
+	MasterPort  int
 }
 
 func NewCheckCommand(host string, port int) CheckCommand {
@@ -43,15 +43,18 @@ func (cmd CheckCommand) execute(dbConnector db.Connector, writer config.Store) e
 	where fsedbid = dbid`)
 
 	if err != nil {
-		return err
+		return errors.New(err.Error())
 	}
 	defer rows.Close()
 
 	err = writer.Load(rows)
 	if err != nil {
-		return err
+		return errors.New(err.Error())
 	}
 
 	err = writer.Write()
-	return err
+	if err != nil {
+		return errors.New(err.Error())
+	}
+	return nil
 }

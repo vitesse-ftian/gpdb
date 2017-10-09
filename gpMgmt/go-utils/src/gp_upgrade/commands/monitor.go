@@ -9,21 +9,22 @@ import (
 	"gp_upgrade/shellParsers"
 	"gp_upgrade/sshClient"
 
+	"github.com/pkg/errors"
 	"gp_upgrade/utils"
 )
 
 type MonitorCommand struct {
-	Host       string `long:"host" required:"yes" description:"Domain name or IP of host"`
-	Port       int    `long:"port" default:"22" description:"SSH port for communication"`
-	User       string `long:"user" default:"" description:"Name of user at ssh destination"`
-	PrivateKey string `long:"private_key" description:"Private key for ssh destination"`
-	SegmentID  int    `long:"segment-id" required:"yes" description:"ID of segment to monitor"`
+	Host       string
+	Port       int
+	User       string
+	PrivateKey string
+	SegmentID  int
 }
 
 func (cmd MonitorCommand) Execute([]string) error {
 	connector, err := sshClient.NewSSHConnector(cmd.PrivateKey)
 	if err != nil {
-		return err
+		return errors.New(err.Error())
 	}
 	return cmd.execute(connector, &shellParsers.RealShellParser{}, os.Stdout)
 }
@@ -31,7 +32,7 @@ func (cmd MonitorCommand) Execute([]string) error {
 func (cmd MonitorCommand) execute(connector sshClient.SSHConnector, shellParser shellParsers.ShellParser, writer io.Writer) error {
 	targetPort, err := readConfigForSegmentPort(cmd.SegmentID)
 	if err != nil {
-		return err
+		return errors.New(err.Error())
 	}
 
 	user := cmd.User
@@ -41,7 +42,7 @@ func (cmd MonitorCommand) execute(connector sshClient.SSHConnector, shellParser 
 
 	output, err := connector.ConnectAndExecute(cmd.Host, cmd.Port, user, "ps auxx | grep pg_upgrade")
 	if err != nil {
-		return err
+		return errors.New(err.Error())
 	}
 
 	status := "active"
@@ -60,7 +61,7 @@ func readConfigForSegmentPort(segmentID int) (int, error) {
 	reader := config.Reader{}
 	err = reader.Read()
 	if err != nil {
-		return -1, err
+		return -1, errors.New(err.Error())
 	}
 	targetPort := reader.GetPortForSegment(segmentID)
 	if targetPort == -1 {

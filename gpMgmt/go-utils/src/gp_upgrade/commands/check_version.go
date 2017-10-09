@@ -14,11 +14,12 @@ import (
 
 	"github.com/cppforlife/go-semi-semantic/version"
 	"github.com/jmoiron/sqlx"
+	"github.com/pkg/errors"
 )
 
 type CheckVersionCommand struct {
-	MasterHost string `long:"master-host" required:"yes" description:"Domain name or IP of host"`
-	MasterPort int    `long:"master-port" required:"no" default:"15432" description:"Port for master database"`
+	MasterHost string
+	MasterPort int
 }
 
 const (
@@ -43,7 +44,7 @@ func (cmd CheckVersionCommand) execute(dbConnector db.Connector, outputWriter io
 	var row string
 	err = connection.QueryRow("SELECT version()").Scan(&row)
 	if err != nil {
-		return err
+		return errors.New(err.Error())
 	}
 
 	re := regexp.MustCompile("Greenplum Database (.*) build")
@@ -51,7 +52,7 @@ func (cmd CheckVersionCommand) execute(dbConnector db.Connector, outputWriter io
 	versionString := re.FindStringSubmatch(row)[1]
 	versionObject, err := version.NewVersionFromString(versionString)
 	if err != nil {
-		return err
+		return errors.New(err.Error())
 	}
 
 	if versionObject.IsGt(version.MustNewVersionFromString(MINIMUM_VERSION)) {
@@ -59,5 +60,5 @@ func (cmd CheckVersionCommand) execute(dbConnector db.Connector, outputWriter io
 	} else {
 		fmt.Fprint(outputWriter, "gp_upgrade: Version Compatibility Check [Failed]\n")
 	}
-	return err
+	return nil
 }

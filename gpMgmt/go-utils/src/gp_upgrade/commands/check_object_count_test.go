@@ -63,7 +63,7 @@ var _ = Describe("object count tests", func() {
 
 					Expect(dbConnector.GetConn().Stats().OpenConnections).To(Equal(0))
 					Expect(err).To(HaveOccurred())
-					Expect(err).To(Equal(errors.New("ERROR: [check object-count] the query for AO table count has failed")))
+					Expect(err.Error()).To(Equal("ERROR: [check object-count] the query for AO table count has failed"))
 
 				})
 			})
@@ -77,7 +77,7 @@ var _ = Describe("object count tests", func() {
 
 					Expect(dbConnector.GetConn().Stats().OpenConnections).To(Equal(0))
 					Expect(err).To(HaveOccurred())
-					Expect(err).To(Equal(errors.New("ERROR: [check object-count] the query for heap-only table count has failed")))
+					Expect(err.Error()).To(Equal("ERROR: [check object-count] the query for heap-only table count has failed"))
 
 				})
 			})
