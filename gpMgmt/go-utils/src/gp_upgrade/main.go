@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"runtime/debug"
+	"fmt"
 )
 
 func main() {
@@ -120,6 +121,7 @@ func main() {
 	err := rootCmd.Execute()
 	if err != nil {
 		// Use v to print the stack trace of an object errors.
-		log.Fatal("%+v\n", err)
+		fmt.Printf("%+v\n", err)
+		os.Exit(1)
 	}
 }
