@@ -146,3 +146,14 @@ flags is specifically tested where needed, for example in
 
 The integration tests may require other binaries to be built. We aim to have
 any such requirements automated.
+
+### Directly using pg_upgrade
+
+Under the covers, gp_upgrade is calling pg_upgrade, first on the master, and
+then on the segments. If needed, you can call pg_upgrade directly. There is
+make target that runs a test, upgrading from version x to x. To do this, two
+clusters are setup on the local machine using demo_cluster.sh. In the root
+directory for the gpdb repo, run is `make -C contrib/pg_upgrade check`. This
+uses test_gpdb.sh to do the heavy lifting, and that can be customized to fit
+your setup. In particular, four env vars are usefor the cluster mapping:
+NEWBINDIR, OLDBINDIR, NEWDATADIR and OLDDATADIR.
