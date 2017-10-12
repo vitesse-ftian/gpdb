@@ -3,12 +3,18 @@ include $(top_builddir)/src/Makefile.global
 
 .DEFAULT_GOAL := all
 
-
 THIS_MAKEFILE_DIR=$(shell pwd)
 MODULE_NAME=$(shell basename $(THIS_MAKEFILE_DIR))
 GO_UTILS_DIR=$(THIS_MAKEFILE_DIR)/../..
 ARCH := amd64
 GPDB_VERSION := $(shell ../../../../getversion --short)
+
+# If you want to do cross-compilation,
+# BUILD_TARGET=linux for linux and
+# BUILD_TARGET=darwin macos.
+# See go build GOOS for more information.
+PLATFORM_POSTFIX := $(if $(BUILD_TARGET),.$(BUILD_TARGET),)
+TARGET_PLATFORM := $(if $(BUILD_TARGET),GOOS=$(BUILD_TARGET) GOARCH=$(ARCH),)
 
 .NOTPARALLEL:
 
@@ -54,20 +60,12 @@ protobuf :
 		protoc -I idl/ idl/*.proto --go_out=plugins=grpc:idl
 
 build :
-		go build -ldflags "-X gp_upgrade/commands.GpdbVersion=$(GPDB_VERSION)" -o $(GO_UTILS_DIR)/bin/$(MODULE_NAME)
-		go build -ldflags "-X gp_upgrade/commands.GpdbVersion=$(GPDB_VERSION)" -o $(GO_UTILS_DIR)/bin/command_listener $(MODULE_NAME)/commandListener
-		go build -ldflags "-X gp_upgrade/commands.GpdbVersion=$(GPDB_VERSION)" -o $(GO_UTILS_DIR)/bin/command_sample $(MODULE_NAME)/commandSample
-
+		$(TARGET_PLATFORM) go build -ldflags "-X gp_upgrade/commands.GpdbVersion=$(GPDB_VERSION)" -o $(GO_UTILS_DIR)/bin/$(MODULE_NAME)$(PLATFORM_POSTFIX)
+		$(TARGET_PLATFORM) go build -ldflags "-X gp_upgrade/commands.GpdbVersion=$(GPDB_VERSION)" -o $(GO_UTILS_DIR)/bin/command_listener$(PLATFORM_POSTFIX) $(MODULE_NAME)/commandListener
+		$(TARGET_PLATFORM) go build -ldflags "-X gp_upgrade/commands.GpdbVersion=$(GPDB_VERSION)" -o $(GO_UTILS_DIR)/bin/command_sample$(PLATFORM_POSTFIX) $(MODULE_NAME)/commandSample
 
 coverage: build
 		./scripts/run_coverage.sh
-
-linux :
-		GOOS=$@ GOARCH=$(ARCH) go build -ldflags "-X gp_upgrade/commands.GpdbVersion=$(GPDB_VERSION)" -o $(GO_UTILS_DIR)/bin/$(MODULE_NAME).$@
-darwin :
-		GOOS=$@ GOARCH=$(ARCH) go build -ldflags "-X gp_upgrade/commands.GpdbVersion=$(GPDB_VERSION)" -o $(GO_UTILS_DIR)/bin/$(MODULE_NAME).$@
-
-platforms : linux darwin
 
 install : build
 	mkdir -p $(prefix)/bin

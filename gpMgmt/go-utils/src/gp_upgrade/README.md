@@ -39,10 +39,10 @@ information there
 We support cross-compilation into Linux or Darwin, as the GPDB servers that
 this tool upgrades run Linux, but many dev workstations are macOS
 
-```apple js
-make platforms
+For a target-specific build, run:
 ```
-should be equivalent to `make linux && make darwin`
+BUILD_TARGET=[linux | darwin] make build
+```
 
 ### Run the tests
 
