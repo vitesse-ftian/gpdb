@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	_ "github.com/lib/pq"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -8,7 +9,6 @@ import (
 	"log"
 	"os"
 	"runtime/debug"
-	"fmt"
 )
 
 func main() {

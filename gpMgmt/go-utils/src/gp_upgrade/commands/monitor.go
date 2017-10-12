@@ -5,12 +5,20 @@ import (
 	"io"
 	"os"
 
+	"golang.org/x/net/context"
+	"google.golang.org/grpc"
 	"gp_upgrade/config"
+	pb "gp_upgrade/idl"
 	"gp_upgrade/shellParsers"
 	"gp_upgrade/sshClient"
 
 	"github.com/pkg/errors"
-	"gp_upgrade/utils"
+	"log"
+)
+
+const (
+	// todo generalize to any host
+	address = "localhost:6416"
 )
 
 type MonitorCommand struct {
@@ -26,28 +34,47 @@ func (cmd MonitorCommand) Execute([]string) error {
 	if err != nil {
 		return errors.New(err.Error())
 	}
+
 	return cmd.execute(connector, &shellParsers.RealShellParser{}, os.Stdout)
 }
 
 func (cmd MonitorCommand) execute(connector sshClient.SSHConnector, shellParser shellParsers.ShellParser, writer io.Writer) error {
+	conn, err := grpc.Dial(address, grpc.WithInsecure())
+	if err != nil {
+		log.Fatalf("did not connect: %v", err)
+	}
+	defer conn.Close()
+	client := pb.NewCommandListenerClient(conn)
+
+	if err != nil {
+		log.Fatalf("could not start upgrade: %v", err)
+	}
+
+	/* Use as ssh reference for later use? */
+	//user := cmd.User
+	//if user == "" {
+	//	user, _, _ = utils.GetUser() // todo last arg is for error--bubble up that error here? with what message?
+	//}
+	//output, err := connector.ConnectAndExecute(cmd.Host, cmd.Port, user, "ps auxx | grep pg_upgrade")
+
 	targetPort, err := readConfigForSegmentPort(cmd.SegmentID)
 	if err != nil {
 		return errors.New(err.Error())
 	}
 
-	user := cmd.User
-	if user == "" {
-		user, _, _ = utils.GetUser() // todo last arg is for error--bubble up that error here? with what message?
-	}
-
-	output, err := connector.ConnectAndExecute(cmd.Host, cmd.Port, user, "ps auxx | grep pg_upgrade")
+	reply, err := client.CheckUpgradeStatus(context.Background(), &pb.CheckUpgradeStatusRequest{})
 	if err != nil {
 		return errors.New(err.Error())
 	}
 
+	if reply.Error != "" {
+		return errors.New("\n\tError received from server " + reply.Error)
+	}
+	log.Printf("Command Listener responded: %s", reply.Status)
+
 	status := "active"
 
-	if !shellParser.IsPgUpgradeRunning(targetPort, output) {
+	if !shellParser.IsPgUpgradeRunning(targetPort, reply.Status) {
 		status = "inactive"
 	}
 	msg := fmt.Sprintf(`pg_upgrade state - %s {"segment_id":%d,"host":"%s"}`, status, cmd.SegmentID, cmd.Host)

@@ -4,6 +4,7 @@ package idl;
 
 service CommandListener {
     rpc TransmitState(TransmitStateRequest) returns (TransmitStateReply) {}
+    rpc CheckUpgradeStatus(CheckUpgradeStatusRequest) returns (CheckUpgradeStatusReply) {}
 }
 
 message TransmitStateRequest {
@@ -12,4 +13,12 @@ message TransmitStateRequest {
 
 message TransmitStateReply {
     string message = 1;
+}
+
+
+message CheckUpgradeStatusRequest {}
+
+message CheckUpgradeStatusReply {
+    string status = 1;
+    string error = 2;
 }
