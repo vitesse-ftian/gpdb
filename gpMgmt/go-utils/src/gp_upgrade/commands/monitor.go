@@ -10,7 +10,6 @@ import (
 	"gp_upgrade/config"
 	pb "gp_upgrade/idl"
 	"gp_upgrade/shellParsers"
-	"gp_upgrade/sshClient"
 
 	"github.com/pkg/errors"
 	"log"
@@ -30,25 +29,20 @@ type MonitorCommand struct {
 }
 
 func (cmd MonitorCommand) Execute([]string) error {
-	connector, err := sshClient.NewSSHConnector(cmd.PrivateKey)
-	if err != nil {
-		return errors.New(err.Error())
-	}
-
-	return cmd.execute(connector, &shellParsers.RealShellParser{}, os.Stdout)
-}
-
-func (cmd MonitorCommand) execute(connector sshClient.SSHConnector, shellParser shellParsers.ShellParser, writer io.Writer) error {
 	conn, err := grpc.Dial(address, grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 	}
-	defer conn.Close()
-	client := pb.NewCommandListenerClient(conn)
-
 	if err != nil {
-		log.Fatalf("could not start upgrade: %v", err)
+		return errors.New(err.Error())
 	}
+	client := pb.NewCommandListenerClient(conn)
+	defer conn.Close()
+
+	return cmd.execute(client, &shellParsers.RealShellParser{}, os.Stdout)
+}
+
+func (cmd MonitorCommand) execute(client pb.CommandListenerClient, shellParser shellParsers.ShellParser, writer io.Writer) error {
 
 	/* Use as ssh reference for later use? */
 	//user := cmd.User

@@ -42,6 +42,11 @@ dependencies :
 format :
 		gofmt -s -w .
 
+generate_mock :
+	go get github.com/golang/mock/gomock
+	go get github.com/golang/mock/mockgen
+	mockgen -source idl/command.pb.go  > mock_idl/command_mock.pb.go
+
 lint :
 		gometalinter --config=gometalinter.config ./...
 

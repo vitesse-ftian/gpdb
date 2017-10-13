@@ -66,6 +66,12 @@ make integration
 make test
 ```
 
+### Generate mocked gRPC client/server code
+```
+# To generate mocked files
+make generate_mock
+```
+
 ## Command line parsing
 
 We are using [the go-flags library](https://github.com/jessevdk/go-flags) for

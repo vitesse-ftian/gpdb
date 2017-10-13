@@ -13,10 +13,15 @@ import (
 
 	"gp_upgrade/testUtils"
 
+	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
 	"github.com/pkg/errors"
+	"google.golang.org/grpc"
+	pb "gp_upgrade/idl"
+	mockpb "gp_upgrade/mock_idl"
+	"testing"
 )
 
 const (
@@ -33,6 +38,10 @@ var _ = Describe("monitor", func() {
 		subject     MonitorCommand
 		buffer      *gbytes.Buffer
 		shellParser *shellParsers.RealShellParser
+		conn        grpc.ClientConn
+		client      *mockpb.MockCommandListenerClient
+		t           *testing.T
+		ctrl        *gomock.Controller
 	)
 
 	BeforeEach(func() {
@@ -44,26 +53,24 @@ var _ = Describe("monitor", func() {
 		shellParser = &shellParsers.RealShellParser{}
 
 		buffer = gbytes.NewBuffer()
+		conn = grpc.ClientConn{}
+		ctrl = gomock.NewController(t)
+		client = mockpb.NewMockCommandListenerClient(ctrl)
+
 	})
 
 	AfterEach(func() {
 		os.Setenv("HOME", saveHomeDir)
+		defer ctrl.Finish()
 	})
 
 	Describe("when pg_upgrade status can be determined on remote host", func() {
-		It("happy: it uses the default user for ssh connection when the user doesn't supply a ssh user", func() {
-			subject.User = ""
-			fake := &FailingSSHConnecter{}
-
-			subject.execute(fake, shellParser, buffer)
-
-			Expect(fake.user).ToNot(Equal(""))
-		})
-
 		It("parses 'active' status correctly", func() {
-			fake := &SucceedingSSHConnector{}
-
-			err := subject.execute(fake, shellParser, buffer)
+			client.EXPECT().CheckUpgradeStatus(
+				gomock.Any(),
+				&pb.CheckUpgradeStatusRequest{},
+			).Return(&pb.CheckUpgradeStatusReply{Status: GREP_PG_UPGRADE}, nil)
+			err := subject.execute(client, shellParser, buffer)
 
 			Expect(err).ToNot(HaveOccurred())
 			Expect(string(buffer.Contents())).To(ContainSubstring(fmt.Sprintf(`pg_upgrade state - active`)))
@@ -71,10 +78,11 @@ var _ = Describe("monitor", func() {
 		})
 
 		It("parses 'inactive' status correctly", func() {
-			fake := &SucceedingSSHConnector{}
-			inactiveParser := &InactiveShellParser{}
-
-			err := subject.execute(fake, inactiveParser, buffer)
+			client.EXPECT().CheckUpgradeStatus(
+				gomock.Any(),
+				&pb.CheckUpgradeStatusRequest{},
+			).Return(&pb.CheckUpgradeStatusReply{Status: "random string"}, nil)
+			err := subject.execute(client, shellParser, buffer)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(string(buffer.Contents())).To(ContainSubstring("inactive"))
 			Expect(string(buffer.Contents())).To(HaveSuffix("\n"))
@@ -83,18 +91,16 @@ var _ = Describe("monitor", func() {
 
 	Describe("errors", func() {
 		It("returns an error when the configuration cannot be read", func() {
-			fake := &FailingSSHConnecter{}
 			os.RemoveAll(config.GetConfigFilePath())
 
-			err := subject.execute(fake, shellParser, buffer)
+			err := subject.execute(client, shellParser, buffer)
 
 			Expect(err).To(HaveOccurred())
 		})
 
 		It("returns an error when the configuration has no entry for the segment-id specified by user", func() {
-			fake := &FailingSSHConnecter{}
 			ioutil.WriteFile(config.GetConfigFilePath(), []byte("[]"), 0600)
-			err := subject.execute(fake, shellParser, buffer)
+			err := subject.execute(client, shellParser, buffer)
 
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("not known in this cluster configuration"))
@@ -102,15 +108,17 @@ var _ = Describe("monitor", func() {
 
 		Context("when ssh connector fails", func() {
 			It("returns an error", func() {
-				fake := &FailingSSHConnecter{}
-
-				err := subject.execute(fake, shellParser, buffer)
+				client.EXPECT().CheckUpgradeStatus(
+					gomock.Any(),
+					&pb.CheckUpgradeStatusRequest{},
+				).Return(&pb.CheckUpgradeStatusReply{Status: "random string"}, errors.New("connection failed"))
+				err := subject.execute(client, shellParser, buffer)
 
 				Expect(err).To(HaveOccurred())
 			})
 		})
 	})
-
+	// TODO investigate why this is passing and how?
 	Describe("errors", func() {
 		Context("when private key is not found", func() {
 			It("returns an error", func() {
