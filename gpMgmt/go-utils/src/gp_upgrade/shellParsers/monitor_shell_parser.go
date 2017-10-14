@@ -5,7 +5,7 @@ import (
 	"strconv"
 )
 
-var segmentPortRegexp = regexp.MustCompile(`--old-port (\d+)`)
+var segmentPortRegexp = regexp.MustCompile(`--old-port.(\d+)`)
 
 type ShellParser interface {
 	IsPgUpgradeRunning(int, string) bool

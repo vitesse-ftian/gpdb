@@ -56,12 +56,13 @@ var _ = Describe("check tests", func() {
 		})
 
 		Describe("errors", func() {
+			//TODO move this test to integration, since Execute isn't checking params anymore
 			Describe("when the required flag master-host is not specified", func() {
 
-				It("returns an error", func() {
-					err := subject.Execute([]string{})
-					Expect(err).To(HaveOccurred())
-				})
+				//It("returns an error", func() {
+				//	err := subject.Execute([]string{})
+				//	Expect(err).To(HaveOccurred())
+				//})
 			})
 			Describe("when the query fails on AO table count", func() {
 

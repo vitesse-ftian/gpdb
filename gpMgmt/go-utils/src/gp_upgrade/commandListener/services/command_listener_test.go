@@ -9,8 +9,10 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/pkg/errors"
 	"gp_upgrade/commandListener/services"
 	"gp_upgrade/idl"
+	"gp_upgrade/utils"
 )
 
 var _ = Describe("CommandListenerManager", func() {
@@ -56,5 +58,25 @@ var _ = Describe("CommandListenerManager", func() {
 		reply, err := clsClient.TransmitState(context.Background(), &request)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(reply.GetMessage()).To(Equal("Finished echo state request: transmit request foo"))
+	})
+	Describe("check upgrade status", func() {
+		It("returns active", func() {
+			utils.System.ExecCmdOutput = func(name string, args ...string) ([]byte, error) {
+				return []byte("CHANGED"), nil
+			}
+			listener := services.NewCommandListener("some string")
+			resp, _ := listener.CheckUpgradeStatus(nil, nil)
+			Expect(resp.Error).To(BeEmpty())
+		})
+	})
+	Describe("check upgrade status", func() {
+		It("returns err", func() {
+			utils.System.ExecCmdOutput = func(name string, args ...string) ([]byte, error) {
+				return []byte("CHANGED"), errors.New("couldn't find bash")
+			}
+			listener := services.NewCommandListener("some string")
+			resp, _ := listener.CheckUpgradeStatus(nil, nil)
+			Expect(resp.Error).ToNot(BeEmpty())
+		})
 	})
 })

@@ -15,21 +15,21 @@ var _ = Describe("user utils", func() {
 	var saveHostname func() (string, error)
 
 	BeforeEach(func() {
-		saveGetenv = system.Getenv
-		saveCurrentUser = system.CurrentUser
-		saveHostname = system.Hostname
+		saveGetenv = System.Getenv
+		saveCurrentUser = System.CurrentUser
+		saveHostname = System.Hostname
 	})
 
 	AfterEach(func() {
-		system.Getenv = saveGetenv
-		system.CurrentUser = saveCurrentUser
-		system.Hostname = saveHostname
+		System.Getenv = saveGetenv
+		System.CurrentUser = saveCurrentUser
+		System.Hostname = saveHostname
 	})
 
 	Describe("#TryEnv", func() {
 		Describe("happy: when an environmental variable exists", func() {
 			It("returns the value", func() {
-				system.Getenv = func(s string) string {
+				System.Getenv = func(s string) string {
 					return "foo"
 				}
 
@@ -39,7 +39,7 @@ var _ = Describe("user utils", func() {
 		})
 		Describe("error: when an environmental variable does not exist", func() {
 			It("returns the default value", func() {
-				system.Getenv = func(s string) string {
+				System.Getenv = func(s string) string {
 					return ""
 				}
 
@@ -52,7 +52,7 @@ var _ = Describe("user utils", func() {
 	Describe("#GetUser", func() {
 		Describe("happy: when no error", func() {
 			It("returns current user", func() {
-				system.CurrentUser = func() (*user.User, error) {
+				System.CurrentUser = func() (*user.User, error) {
 					return &user.User{
 						Username: "Joe",
 						HomeDir:  "my_home_dir",
@@ -67,7 +67,7 @@ var _ = Describe("user utils", func() {
 		})
 		Describe("error: when CurrentUser() fails", func() {
 			It("returns an error", func() {
-				system.CurrentUser = func() (*user.User, error) {
+				System.CurrentUser = func() (*user.User, error) {
 					return nil, errors.New("my deliberate user error")
 				}
 
@@ -79,7 +79,7 @@ var _ = Describe("user utils", func() {
 	Describe("#GetHost", func() {
 		Describe("happy: when no error", func() {
 			It("returns host", func() {
-				system.Hostname = func() (string, error) {
+				System.Hostname = func() (string, error) {
 					return "my_host", nil
 				}
 
@@ -90,7 +90,7 @@ var _ = Describe("user utils", func() {
 		})
 		Describe("error: when Hostname() fails", func() {
 			It("returns an error", func() {
-				system.Hostname = func() (string, error) {
+				System.Hostname = func() (string, error) {
 					return "", errors.New("my deliberate hostname error")
 				}
 

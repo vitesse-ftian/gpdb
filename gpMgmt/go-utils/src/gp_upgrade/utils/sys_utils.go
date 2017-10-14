@@ -3,19 +3,20 @@ package utils
 import (
 	//"github.com/jmoiron/sqlx"
 	"os"
+	"os/exec"
 	"os/user"
 	"time"
 )
 
 var (
-	system = InitializeSystemFunctions()
+	System = InitializeSystemFunctions()
 )
 
 /*
  * SystemFunctions holds function pointers for built-in functions that will need
  * to be mocked out for unit testing.  All built-in functions manipulating the
  * filesystem, shell, or environment should ideally be called through a function
- * pointer in system (the global SystemFunctions variable) instead of being called
+ * pointer in System (the global SystemFunctions variable) instead of being called
  * directly.
  */
 
@@ -29,24 +30,28 @@ type SystemFunctions struct {
 	Now         func() time.Time
 	OpenFile    func(name string, flag int, perm os.FileMode) (*os.File, error)
 	Stat        func(name string) (os.FileInfo, error)
+	//TODO consider other patterns here?
+	//first attempt at enabling us to mock exec.Command().Output()
+	ExecCmdOutput func(name string, args ...string) ([]byte, error)
 }
 
 func InitializeSystemFunctions() *SystemFunctions {
 	return &SystemFunctions{
-		CurrentUser: user.Current,
-		Getenv:      os.Getenv,
-		Getpid:      os.Getpid,
-		Hostname:    os.Hostname,
-		IsNotExist:  os.IsNotExist,
-		MkdirAll:    os.MkdirAll,
-		Now:         time.Now,
-		OpenFile:    os.OpenFile,
-		Stat:        os.Stat,
+		CurrentUser:   user.Current,
+		Getenv:        os.Getenv,
+		Getpid:        os.Getpid,
+		Hostname:      os.Hostname,
+		IsNotExist:    os.IsNotExist,
+		MkdirAll:      os.MkdirAll,
+		Now:           time.Now,
+		OpenFile:      os.OpenFile,
+		Stat:          os.Stat,
+		ExecCmdOutput: CommandOutput,
 	}
 }
 
 func TryEnv(varname string, defval string) string {
-	val := system.Getenv(varname)
+	val := System.Getenv(varname)
 	if val == "" {
 		return defval
 	}
@@ -54,7 +59,7 @@ func TryEnv(varname string, defval string) string {
 }
 
 func GetUser() (string, string, error) {
-	currentUser, err := system.CurrentUser()
+	currentUser, err := System.CurrentUser()
 	if err != nil {
 		return "", "", err
 	}
@@ -62,6 +67,10 @@ func GetUser() (string, string, error) {
 }
 
 func GetHost() (string, error) {
-	hostname, err := system.Hostname()
+	hostname, err := System.Hostname()
 	return hostname, err
+}
+
+func CommandOutput(name string, args ...string) ([]byte, error) {
+	return exec.Command(name, args...).Output()
 }

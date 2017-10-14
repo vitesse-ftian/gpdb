@@ -62,7 +62,7 @@ func (cmd MonitorCommand) execute(client pb.CommandListenerClient, shellParser s
 	}
 
 	if reply.Error != "" {
-		return errors.New("\n\tError received from server " + reply.Error)
+		return errors.New(reply.Error)
 	}
 	log.Printf("Command Listener responded: %s", reply.Status)
 
