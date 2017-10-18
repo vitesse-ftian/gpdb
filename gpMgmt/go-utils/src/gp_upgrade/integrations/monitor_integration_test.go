@@ -40,6 +40,10 @@ func (s *mockSomething) CheckUpgradeStatus(ctx context.Context, in *idl.CheckUpg
 	return &idl.CheckUpgradeStatusReply{ProcessList: s.reply}, nil
 }
 
+func (s *mockSomething) CheckDiskUsage(ctx context.Context, in *idl.CheckDiskUsageRequest) (*idl.CheckDiskUsageReply, error) {
+	return &idl.CheckDiskUsageReply{FilesystemUsageList: "irrelevant mock for this test's purpose"}, nil
+}
+
 var _ = Describe("monitor", func() {
 
 	var (

@@ -70,6 +70,7 @@ func (cmd ObjectCountCommand) executeAll(dbConnector db.Connector, outputWriter 
 
 	for i := 0; i < len(names); i++ {
 		dbConn := cmd.dbConnFactory.NewDBConn(cmd.MasterHost, cmd.MasterPort, names[i])
+		// TODO: use an injected stdout buffer
 		fmt.Println("Checking object counts in database: " + names[i])
 		err = cmd.executeSingleDatabase(dbConn, outputWriter)
 		if err != nil {

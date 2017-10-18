@@ -23,3 +23,13 @@ func (s *commandListenerImpl) CheckUpgradeStatus(ctx context.Context, in *pb.Che
 	}
 	return &pb.CheckUpgradeStatusReply{ProcessList: string(output)}, nil
 }
+
+func (s *commandListenerImpl) CheckDiskUsage(ctx context.Context, in *pb.CheckDiskUsageRequest) (*pb.CheckDiskUsageReply, error) {
+	cmd := "df -h %s"
+	output, err := utils.System.ExecCmdOutput("bash", "-c", cmd)
+	if err != nil {
+		return nil, err
+	}
+	strOutput := string(output)
+	return &pb.CheckDiskUsageReply{FilesystemUsageList: strOutput}, nil
+}

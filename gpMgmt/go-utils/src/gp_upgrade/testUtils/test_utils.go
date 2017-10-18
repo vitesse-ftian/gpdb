@@ -27,6 +27,21 @@ const (
     "role": "m",
     "san_mounts": null,
     "status": "u"
+  },
+  {
+    "address": "aspen",
+    "content": 1,
+    "dbid": 6,
+    "fsedbid": 6,
+    "fsefsoid": "3052",
+    "fselocation": "/Users/pivotal/workspace/gpdb/gpAux/gpdemo/datadirs/dbfast_mirror2/demoDataDir1",
+    "hostname": "aspen.pivotal",
+    "mode": "s",
+    "port": 25436,
+    "preferred_role": "m",
+    "replication_port": 25442,
+    "role": "m",
+    "status": "u"
   }]`
 )
 

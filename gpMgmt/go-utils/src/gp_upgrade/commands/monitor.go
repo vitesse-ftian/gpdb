@@ -17,7 +17,8 @@ import (
 
 const (
 	// todo generalize to any host
-	address = "localhost:6416"
+	address = "localhost"
+	port    = "6416"
 )
 
 type MonitorCommand struct {
@@ -29,7 +30,7 @@ type MonitorCommand struct {
 }
 
 func (cmd MonitorCommand) Execute([]string) error {
-	conn, err := grpc.Dial(address, grpc.WithInsecure())
+	conn, err := grpc.Dial(address+":"+port, grpc.WithInsecure())
 	if err != nil {
 		gpbackupUtils.GetLogger().Fatal(err, "did not connect")
 	}

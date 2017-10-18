@@ -36,6 +36,17 @@ func (reader Reader) GetPortForSegment(segmentDbid int) int {
 	return result
 }
 
+func (reader Reader) GetHostnames() []string {
+	if len(reader.config) == 0 {
+		reader.Read()
+	}
+	var hostnames []string
+	for i := 0; i < len(reader.config); i++ {
+		hostnames = append(hostnames, reader.config[i].Hostname)
+	}
+	return hostnames
+}
+
 func (reader Reader) GetSegmentConfiguration() SegmentConfiguration {
 	return reader.config
 }

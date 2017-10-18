@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"gp_upgrade/commands"
+	"gp_upgrade/config"
 	"log"
 	"os"
 	"runtime/debug"
@@ -69,6 +70,18 @@ func main() {
 		},
 	}
 
+	var cmdCheckSubDiskSpaceCommand = &cobra.Command{
+		Use:     "disk-space",
+		Short:   "check that disk space usage is less than 80% on all segments",
+		Long:    "check that disk space usage is less than 80% on all segments",
+		Aliases: []string{"du"},
+		Run: func(cmd *cobra.Command, args []string) {
+			clients := config.RPCClients{}.GetRPCClients()
+			hub := commands.Hub{}
+			hub.CheckDiskUsage(clients, os.Stdout)
+		},
+	}
+
 	var cmdVersion = &cobra.Command{
 		Use:   "version",
 		Short: "Version of gp_upgrade",
@@ -120,6 +133,8 @@ func main() {
 	// subcommands
 	cmdCheck.AddCommand(cmdCheckSubCheckVersionCommand)
 	cmdCheck.AddCommand(cmdCheckSubObjectCountCommand)
+	cmdCheck.AddCommand(cmdCheckSubDiskSpaceCommand)
+	//TODO if give a subcommand that doesn't exist, we should give the user feedback
 
 	err := rootCmd.Execute()
 	if err != nil {

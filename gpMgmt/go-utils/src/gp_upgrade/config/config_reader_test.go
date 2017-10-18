@@ -51,5 +51,12 @@ var _ = Describe("config reader", func() {
 			err := subject.Read()
 			Expect(err).To(HaveOccurred())
 		})
+		It("returns list of hostnames", func() {
+			testUtils.WriteSampleConfig()
+			err := subject.Read()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(subject.GetHostnames()).Should(ContainElement("briarwood"))
+			Expect(subject.GetHostnames()).Should(ContainElement("aspen.pivotal"))
+		})
 	})
 })

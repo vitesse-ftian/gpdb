@@ -4,10 +4,17 @@ package idl;
 
 service CommandListener {
     rpc CheckUpgradeStatus(CheckUpgradeStatusRequest) returns (CheckUpgradeStatusReply) {}
+    rpc CheckDiskUsage(CheckDiskUsageRequest) returns (CheckDiskUsageReply) {}
 }
 
 message CheckUpgradeStatusRequest {}
 
 message CheckUpgradeStatusReply {
     string process_list = 1;
+}
+
+message CheckDiskUsageRequest {}
+
+message CheckDiskUsageReply {
+    string filesystem_usage_list = 1;
 }
