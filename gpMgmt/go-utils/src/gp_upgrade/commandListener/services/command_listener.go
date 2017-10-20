@@ -3,7 +3,6 @@
 package services
 
 import (
-	"fmt"
 	"golang.org/x/net/context"
 	pb "gp_upgrade/idl"
 	"gp_upgrade/utils"
@@ -22,6 +21,5 @@ func (s *commandListenerImpl) CheckUpgradeStatus(ctx context.Context, in *pb.Che
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("replying to check upgrade status request - " + string(output) + " - blank?")
 	return &pb.CheckUpgradeStatusReply{ProcessList: string(output)}, nil
 }

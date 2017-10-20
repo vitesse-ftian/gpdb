@@ -10,6 +10,17 @@ import (
 )
 
 var _ = Describe("CommandListener", func() {
+	var (
+		storedExecCmdOutput func(name string, args ...string) ([]byte, error)
+	)
+
+	BeforeEach(func() {
+		storedExecCmdOutput = utils.System.ExecCmdOutput
+	})
+
+	AfterEach(func() {
+		utils.System.ExecCmdOutput = storedExecCmdOutput
+	})
 	Describe("check upgrade status", func() {
 		It("returns the shell command output", func() {
 			utils.System.ExecCmdOutput = func(name string, args ...string) ([]byte, error) {
