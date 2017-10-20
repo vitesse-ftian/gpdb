@@ -45,7 +45,7 @@ format :
 generate_mock :
 	go get github.com/golang/mock/gomock
 	go get github.com/golang/mock/mockgen
-	mockgen -source idl/command.pb.go  > mock_idl/command_mock.pb.go
+	mockgen -source idl/command.pb.go -imports ".=gp_upgrade/idl" > mock_idl/command_mock.pb.go
 
 lint :
 		gometalinter --config=gometalinter.config ./...
@@ -67,7 +67,6 @@ protobuf :
 build :
 		$(TARGET_PLATFORM) go build -ldflags "-X gp_upgrade/commands.GpdbVersion=$(GPDB_VERSION)" -o $(GO_UTILS_DIR)/bin/$(MODULE_NAME)$(PLATFORM_POSTFIX)
 		$(TARGET_PLATFORM) go build -ldflags "-X gp_upgrade/commands.GpdbVersion=$(GPDB_VERSION)" -o $(GO_UTILS_DIR)/bin/command_listener$(PLATFORM_POSTFIX) $(MODULE_NAME)/commandListener
-		$(TARGET_PLATFORM) go build -ldflags "-X gp_upgrade/commands.GpdbVersion=$(GPDB_VERSION)" -o $(GO_UTILS_DIR)/bin/command_sample$(PLATFORM_POSTFIX) $(MODULE_NAME)/commandSample
 
 coverage: build
 		./scripts/run_coverage.sh

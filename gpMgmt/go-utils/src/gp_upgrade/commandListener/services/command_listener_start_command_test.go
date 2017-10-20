@@ -42,8 +42,8 @@ var _ = Describe("CommandListenerStartCommand", func() {
 			Expect(err).ToNot(HaveOccurred())
 			clsClient, connCloser := establishClient(fmt.Sprintf("localhost%v", port))
 			defer connCloser.Close()
-			request := idl.TransmitStateRequest{"transmit request"}
-			_, err = clsClient.TransmitState(context.Background(), &request)
+			request := idl.CheckUpgradeStatusRequest{}
+			_, err = clsClient.CheckUpgradeStatus(context.Background(), &request)
 			Expect(err).ToNot(HaveOccurred())
 			Consistently(errorChannel).ShouldNot(Receive())
 

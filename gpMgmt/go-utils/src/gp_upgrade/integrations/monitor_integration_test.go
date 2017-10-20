@@ -33,11 +33,6 @@ type mockSomething struct {
 	reply string
 }
 
-func (s *mockSomething) TransmitState(ctx context.Context, in *idl.TransmitStateRequest) (*idl.TransmitStateReply, error) {
-	return &idl.TransmitStateReply{Message: ""}, nil
-
-}
-
 func (s *mockSomething) CheckUpgradeStatus(ctx context.Context, in *idl.CheckUpgradeStatusRequest) (*idl.CheckUpgradeStatusReply, error) {
 	return &idl.CheckUpgradeStatusReply{ProcessList: s.reply}, nil
 }

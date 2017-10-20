@@ -8,8 +8,6 @@ It is generated from these files:
 	command.proto
 
 It has these top-level messages:
-	TransmitStateRequest
-	TransmitStateReply
 	CheckUpgradeStatusRequest
 	CheckUpgradeStatusReply
 */
@@ -35,45 +33,13 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
-type TransmitStateRequest struct {
-	Name string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
-}
-
-func (m *TransmitStateRequest) Reset()                    { *m = TransmitStateRequest{} }
-func (m *TransmitStateRequest) String() string            { return proto.CompactTextString(m) }
-func (*TransmitStateRequest) ProtoMessage()               {}
-func (*TransmitStateRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
-
-func (m *TransmitStateRequest) GetName() string {
-	if m != nil {
-		return m.Name
-	}
-	return ""
-}
-
-type TransmitStateReply struct {
-	Message string `protobuf:"bytes,1,opt,name=message" json:"message,omitempty"`
-}
-
-func (m *TransmitStateReply) Reset()                    { *m = TransmitStateReply{} }
-func (m *TransmitStateReply) String() string            { return proto.CompactTextString(m) }
-func (*TransmitStateReply) ProtoMessage()               {}
-func (*TransmitStateReply) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
-
-func (m *TransmitStateReply) GetMessage() string {
-	if m != nil {
-		return m.Message
-	}
-	return ""
-}
-
 type CheckUpgradeStatusRequest struct {
 }
 
 func (m *CheckUpgradeStatusRequest) Reset()                    { *m = CheckUpgradeStatusRequest{} }
 func (m *CheckUpgradeStatusRequest) String() string            { return proto.CompactTextString(m) }
 func (*CheckUpgradeStatusRequest) ProtoMessage()               {}
-func (*CheckUpgradeStatusRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
+func (*CheckUpgradeStatusRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
 
 type CheckUpgradeStatusReply struct {
 	ProcessList string `protobuf:"bytes,1,opt,name=process_list,json=processList" json:"process_list,omitempty"`
@@ -82,7 +48,7 @@ type CheckUpgradeStatusReply struct {
 func (m *CheckUpgradeStatusReply) Reset()                    { *m = CheckUpgradeStatusReply{} }
 func (m *CheckUpgradeStatusReply) String() string            { return proto.CompactTextString(m) }
 func (*CheckUpgradeStatusReply) ProtoMessage()               {}
-func (*CheckUpgradeStatusReply) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{3} }
+func (*CheckUpgradeStatusReply) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
 
 func (m *CheckUpgradeStatusReply) GetProcessList() string {
 	if m != nil {
@@ -92,8 +58,6 @@ func (m *CheckUpgradeStatusReply) GetProcessList() string {
 }
 
 func init() {
-	proto.RegisterType((*TransmitStateRequest)(nil), "idl.TransmitStateRequest")
-	proto.RegisterType((*TransmitStateReply)(nil), "idl.TransmitStateReply")
 	proto.RegisterType((*CheckUpgradeStatusRequest)(nil), "idl.CheckUpgradeStatusRequest")
 	proto.RegisterType((*CheckUpgradeStatusReply)(nil), "idl.CheckUpgradeStatusReply")
 }
@@ -109,7 +73,6 @@ const _ = grpc.SupportPackageIsVersion4
 // Client API for CommandListener service
 
 type CommandListenerClient interface {
-	TransmitState(ctx context.Context, in *TransmitStateRequest, opts ...grpc.CallOption) (*TransmitStateReply, error)
 	CheckUpgradeStatus(ctx context.Context, in *CheckUpgradeStatusRequest, opts ...grpc.CallOption) (*CheckUpgradeStatusReply, error)
 }
 
@@ -119,15 +82,6 @@ type commandListenerClient struct {
 
 func NewCommandListenerClient(cc *grpc.ClientConn) CommandListenerClient {
 	return &commandListenerClient{cc}
-}
-
-func (c *commandListenerClient) TransmitState(ctx context.Context, in *TransmitStateRequest, opts ...grpc.CallOption) (*TransmitStateReply, error) {
-	out := new(TransmitStateReply)
-	err := grpc.Invoke(ctx, "/idl.CommandListener/TransmitState", in, out, c.cc, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
 }
 
 func (c *commandListenerClient) CheckUpgradeStatus(ctx context.Context, in *CheckUpgradeStatusRequest, opts ...grpc.CallOption) (*CheckUpgradeStatusReply, error) {
@@ -142,30 +96,11 @@ func (c *commandListenerClient) CheckUpgradeStatus(ctx context.Context, in *Chec
 // Server API for CommandListener service
 
 type CommandListenerServer interface {
-	TransmitState(context.Context, *TransmitStateRequest) (*TransmitStateReply, error)
 	CheckUpgradeStatus(context.Context, *CheckUpgradeStatusRequest) (*CheckUpgradeStatusReply, error)
 }
 
 func RegisterCommandListenerServer(s *grpc.Server, srv CommandListenerServer) {
 	s.RegisterService(&_CommandListener_serviceDesc, srv)
-}
-
-func _CommandListener_TransmitState_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(TransmitStateRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(CommandListenerServer).TransmitState(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/idl.CommandListener/TransmitState",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CommandListenerServer).TransmitState(ctx, req.(*TransmitStateRequest))
-	}
-	return interceptor(ctx, in, info, handler)
 }
 
 func _CommandListener_CheckUpgradeStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -191,10 +126,6 @@ var _CommandListener_serviceDesc = grpc.ServiceDesc{
 	HandlerType: (*CommandListenerServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "TransmitState",
-			Handler:    _CommandListener_TransmitState_Handler,
-		},
-		{
 			MethodName: "CheckUpgradeStatus",
 			Handler:    _CommandListener_CheckUpgradeStatus_Handler,
 		},
@@ -206,19 +137,15 @@ var _CommandListener_serviceDesc = grpc.ServiceDesc{
 func init() { proto.RegisterFile("command.proto", fileDescriptor0) }
 
 var fileDescriptor0 = []byte{
-	// 224 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x74, 0x50, 0xbb, 0x4a, 0x04, 0x31,
-	0x14, 0x75, 0x50, 0x14, 0xaf, 0x2e, 0xc2, 0x45, 0xd8, 0x87, 0x22, 0x9a, 0x4a, 0x2c, 0x52, 0x68,
-	0x6b, 0xb7, 0xd8, 0x59, 0xad, 0x6b, 0x2d, 0x71, 0x72, 0x59, 0x83, 0x79, 0x99, 0x9b, 0x2d, 0xe6,
-	0xa7, 0xfc, 0x46, 0x99, 0x38, 0x53, 0xe8, 0xce, 0x74, 0x39, 0x39, 0x8f, 0x9c, 0x13, 0x98, 0xd4,
-	0xc1, 0x39, 0xe5, 0xb5, 0x8c, 0x29, 0xe4, 0x80, 0xfb, 0x46, 0x5b, 0x71, 0x07, 0xe7, 0xeb, 0xa4,
-	0x3c, 0x3b, 0x93, 0x5f, 0xb2, 0xca, 0xb4, 0xa2, 0xaf, 0x2d, 0x71, 0x46, 0x84, 0x03, 0xaf, 0x1c,
-	0xcd, 0xaa, 0xeb, 0xea, 0xf6, 0x78, 0x55, 0xce, 0x42, 0x02, 0xfe, 0xd3, 0x46, 0xdb, 0xe0, 0x0c,
-	0x8e, 0x1c, 0x31, 0xab, 0x4d, 0x2f, 0xee, 0xa1, 0xb8, 0x80, 0xf9, 0xf2, 0x83, 0xea, 0xcf, 0xd7,
-	0xb8, 0x49, 0x4a, 0x53, 0xeb, 0xd9, 0x72, 0xf7, 0x80, 0x78, 0x84, 0xe9, 0x10, 0xd9, 0x26, 0xde,
-	0xc0, 0x69, 0x4c, 0xa1, 0x26, 0xe6, 0x37, 0x6b, 0x38, 0x77, 0xb1, 0x27, 0xdd, 0xdd, 0xb3, 0xe1,
-	0x7c, 0xff, 0x5d, 0xc1, 0xd9, 0xf2, 0x77, 0x4d, 0x8b, 0xc9, 0x53, 0xc2, 0x27, 0x98, 0xfc, 0xa9,
-	0x87, 0x73, 0x69, 0xb4, 0x95, 0x43, 0xf3, 0x16, 0xd3, 0x21, 0x2a, 0xda, 0x46, 0xec, 0xe1, 0x1a,
-	0x70, 0xb7, 0x18, 0x5e, 0x15, 0xc3, 0xe8, 0x9c, 0xc5, 0xe5, 0x28, 0x5f, 0x52, 0xdf, 0x0f, 0xcb,
-	0x9f, 0x3f, 0xfc, 0x04, 0x00, 0x00, 0xff, 0xff, 0x4a, 0x4f, 0xbe, 0x87, 0x84, 0x01, 0x00, 0x00,
+	// 155 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xe2, 0x4d, 0xce, 0xcf, 0xcd,
+	0x4d, 0xcc, 0x4b, 0xd1, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x62, 0xce, 0x4c, 0xc9, 0x51, 0x92,
+	0xe6, 0x92, 0x74, 0xce, 0x48, 0x4d, 0xce, 0x0e, 0x2d, 0x48, 0x2f, 0x4a, 0x4c, 0x49, 0x0d, 0x2e,
+	0x49, 0x2c, 0x29, 0x2d, 0x0e, 0x4a, 0x2d, 0x2c, 0x4d, 0x2d, 0x2e, 0x51, 0xb2, 0xe1, 0x12, 0xc7,
+	0x26, 0x59, 0x90, 0x53, 0x29, 0xa4, 0xc8, 0xc5, 0x53, 0x50, 0x94, 0x9f, 0x9c, 0x5a, 0x5c, 0x1c,
+	0x9f, 0x93, 0x59, 0x5c, 0x22, 0xc1, 0xa8, 0xc0, 0xa8, 0xc1, 0x19, 0xc4, 0x0d, 0x15, 0xf3, 0xc9,
+	0x2c, 0x2e, 0x31, 0x4a, 0xe7, 0xe2, 0x77, 0x86, 0x58, 0x08, 0xe2, 0xa6, 0xe6, 0xa5, 0x16, 0x09,
+	0x85, 0x70, 0x09, 0x61, 0x1a, 0x28, 0x24, 0xa7, 0x97, 0x99, 0x92, 0xa3, 0x87, 0xd3, 0x19, 0x52,
+	0x32, 0x38, 0xe5, 0x0b, 0x72, 0x2a, 0x95, 0x18, 0x92, 0xd8, 0xc0, 0xfe, 0x31, 0x06, 0x04, 0x00,
+	0x00, 0xff, 0xff, 0x49, 0x5e, 0xf5, 0x92, 0xe0, 0x00, 0x00, 0x00,
 }

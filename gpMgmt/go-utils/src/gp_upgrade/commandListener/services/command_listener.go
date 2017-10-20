@@ -9,17 +9,10 @@ import (
 	"gp_upgrade/utils"
 )
 
-type commandListenerImpl struct {
-	reply string
-}
+type commandListenerImpl struct{}
 
-func NewCommandListener(result string) pb.CommandListenerServer {
-	return &commandListenerImpl{reply: result}
-}
-
-func (s *commandListenerImpl) TransmitState(ctx context.Context, in *pb.TransmitStateRequest) (*pb.TransmitStateReply, error) {
-	fmt.Println("replying to message: " + in.Name)
-	return &pb.TransmitStateReply{Message: "Finished echo state request: " + in.Name + " " + s.reply}, nil
+func NewCommandListener() pb.CommandListenerServer {
+	return &commandListenerImpl{}
 }
 
 func (s *commandListenerImpl) CheckUpgradeStatus(ctx context.Context, in *pb.CheckUpgradeStatusRequest) (*pb.CheckUpgradeStatusReply, error) {

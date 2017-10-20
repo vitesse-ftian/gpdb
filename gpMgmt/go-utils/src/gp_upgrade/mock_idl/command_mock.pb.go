@@ -35,24 +35,6 @@ func (m *MockCommandListenerClient) EXPECT() *MockCommandListenerClientMockRecor
 	return m.recorder
 }
 
-// TransmitState mocks base method
-func (m *MockCommandListenerClient) TransmitState(ctx context.Context, in *TransmitStateRequest, opts ...grpc.CallOption) (*TransmitStateReply, error) {
-	varargs := []interface{}{ctx, in}
-	for _, a := range opts {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "TransmitState", varargs...)
-	ret0, _ := ret[0].(*TransmitStateReply)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// TransmitState indicates an expected call of TransmitState
-func (mr *MockCommandListenerClientMockRecorder) TransmitState(ctx, in interface{}, opts ...interface{}) *gomock.Call {
-	varargs := append([]interface{}{ctx, in}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TransmitState", reflect.TypeOf((*MockCommandListenerClient)(nil).TransmitState), varargs...)
-}
-
 // CheckUpgradeStatus mocks base method
 func (m *MockCommandListenerClient) CheckUpgradeStatus(ctx context.Context, in *CheckUpgradeStatusRequest, opts ...grpc.CallOption) (*CheckUpgradeStatusReply, error) {
 	varargs := []interface{}{ctx, in}
@@ -92,19 +74,6 @@ func NewMockCommandListenerServer(ctrl *gomock.Controller) *MockCommandListenerS
 // EXPECT returns an object that allows the caller to indicate expected use
 func (m *MockCommandListenerServer) EXPECT() *MockCommandListenerServerMockRecorder {
 	return m.recorder
-}
-
-// TransmitState mocks base method
-func (m *MockCommandListenerServer) TransmitState(arg0 context.Context, arg1 *TransmitStateRequest) (*TransmitStateReply, error) {
-	ret := m.ctrl.Call(m, "TransmitState", arg0, arg1)
-	ret0, _ := ret[0].(*TransmitStateReply)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// TransmitState indicates an expected call of TransmitState
-func (mr *MockCommandListenerServerMockRecorder) TransmitState(arg0, arg1 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TransmitState", reflect.TypeOf((*MockCommandListenerServer)(nil).TransmitState), arg0, arg1)
 }
 
 // CheckUpgradeStatus mocks base method

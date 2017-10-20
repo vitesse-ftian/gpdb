@@ -31,7 +31,7 @@ func (cmd CommandListenerStartCommand) execute([]string) (*grpc.Server, chan err
 	}
 
 	server := grpc.NewServer()
-	myImpl := NewCommandListener("foo")
+	myImpl := NewCommandListener()
 	pb.RegisterCommandListenerServer(server, myImpl)
 	reflection.Register(server)
 	go func(myListener net.Listener) {

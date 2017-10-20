@@ -3,18 +3,8 @@ syntax = "proto3";
 package idl;
 
 service CommandListener {
-    rpc TransmitState(TransmitStateRequest) returns (TransmitStateReply) {}
     rpc CheckUpgradeStatus(CheckUpgradeStatusRequest) returns (CheckUpgradeStatusReply) {}
 }
-
-message TransmitStateRequest {
-    string name = 1;
-}
-
-message TransmitStateReply {
-    string message = 1;
-}
-
 
 message CheckUpgradeStatusRequest {}
 
