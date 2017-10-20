@@ -397,7 +397,7 @@ standard_ExecutorStart(QueryDesc *queryDesc, int eflags)
 	 */
 	estate->es_snapshot = RegisterSnapshot(queryDesc->snapshot);
 	estate->es_crosscheck_snapshot = RegisterSnapshot(queryDesc->crosscheck_snapshot);
-	estate->es_instrument = queryDesc->doInstrument;
+	estate->es_instrument = queryDesc->instrument_options;
 	estate->showstatctx = queryDesc->showstatctx;
 
 	/*
@@ -461,7 +461,7 @@ standard_ExecutorStart(QueryDesc *queryDesc, int eflags)
 		}
 
 		/* Pass EXPLAIN ANALYZE flag to qExecs. */
-		estate->es_sliceTable->doInstrument = queryDesc->doInstrument;
+		estate->es_sliceTable->instrument_options = queryDesc->instrument_options;
 
 		/* set our global sliceid variable for elog. */
 		currentSliceId = LocallyExecutingSliceIndex(estate);
@@ -517,8 +517,8 @@ standard_ExecutorStart(QueryDesc *queryDesc, int eflags)
 			currentSliceId = LocallyExecutingSliceIndex(estate);
 
 			/* Should we collect statistics for EXPLAIN ANALYZE? */
-			estate->es_instrument = sliceTable->doInstrument;
-			queryDesc->doInstrument = sliceTable->doInstrument;
+			estate->es_instrument = sliceTable->instrument_options;
+			queryDesc->instrument_options = sliceTable->instrument_options;
 		}
 
 		/* InitPlan() will acquire locks by walking the entire plan
@@ -969,7 +969,8 @@ standard_ExecutorRun(QueryDesc *queryDesc,
 	{
         /* If EXPLAIN ANALYZE, let qExec try to return stats to qDisp. */
         if (estate->es_sliceTable &&
-            estate->es_sliceTable->doInstrument &&
+            estate->es_sliceTable->instrument_options &&
+			(estate->es_sliceTable->instrument_options & INSTRUMENT_CDB) &&
             Gp_role == GP_ROLE_EXECUTE)
         {
             PG_TRY();
@@ -1099,7 +1100,8 @@ standard_ExecutorEnd(QueryDesc *queryDesc)
      * If EXPLAIN ANALYZE, qExec returns stats to qDisp now.
      */
     if (estate->es_sliceTable &&
-        estate->es_sliceTable->doInstrument &&
+        estate->es_sliceTable->instrument_options &&
+		(estate->es_sliceTable->instrument_options & INSTRUMENT_CDB) &&
         Gp_role == GP_ROLE_EXECUTE)
         cdbexplain_sendExecStats(queryDesc);
 
@@ -1900,7 +1902,7 @@ InitPlan(QueryDesc *queryDesc, int eflags)
 			 *
 			 * GPDB: We always set the REWIND flag, to delay eagerfree.
 			 */
-			sp_eflags = eflags & EXEC_FLAG_EXPLAIN_ONLY;
+			sp_eflags = eflags & (EXEC_FLAG_EXPLAIN_ONLY);
 			sp_eflags |= EXEC_FLAG_REWIND;
 
 			Plan	   *subplan = (Plan *) lfirst(l);
@@ -1917,6 +1919,9 @@ InitPlan(QueryDesc *queryDesc, int eflags)
 
 	/* Extract all precomputed parameters from init plans */
 	ExtractParamsFromInitPlans(plannedstmt, plannedstmt->planTree, estate);
+
+	/*Register a callback function in ResourceOwner to recycle Inster in shmem*/
+	RegisterResourceReleaseCallback(InstrShmemRecycleCallback, NULL);
 
 	/*
 	 * Initialize the private state information for all the nodes in the query
@@ -2228,7 +2233,7 @@ InitResultRelInfo(ResultRelInfo *resultRelInfo,
 				  Relation resultRelationDesc,
 				  Index resultRelationIndex,
 				  CmdType operation,
-				  bool doInstrument)
+				  int instrument_options)
 {
 	/*
 	 * Check valid relkind ... parser and/or planner should have noticed this
@@ -2303,10 +2308,8 @@ InitResultRelInfo(ResultRelInfo *resultRelInfo,
 
 		resultRelInfo->ri_TrigFunctions = (FmgrInfo *)
 			palloc0(n * sizeof(FmgrInfo));
-		if (doInstrument)
-			resultRelInfo->ri_TrigInstrument = InstrAlloc(n);
-		else
-			resultRelInfo->ri_TrigInstrument = NULL;
+		if (instrument_options)
+			resultRelInfo->ri_TrigInstrument = InstrAlloc(n, instrument_options);
 	}
 	else
 	{
