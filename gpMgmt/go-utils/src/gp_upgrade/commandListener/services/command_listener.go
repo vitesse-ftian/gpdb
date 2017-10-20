@@ -25,12 +25,10 @@ func (s *commandListenerImpl) TransmitState(ctx context.Context, in *pb.Transmit
 func (s *commandListenerImpl) CheckUpgradeStatus(ctx context.Context, in *pb.CheckUpgradeStatusRequest) (*pb.CheckUpgradeStatusReply, error) {
 	cmd := "ps auxx | grep pg_upgrade"
 
-	commandStatus := ""
 	output, err := utils.System.ExecCmdOutput("bash", "-c", cmd)
 	if err != nil {
-		fmt.Println("error on server side " + err.Error())
-		commandStatus = err.Error()
+		return nil, err
 	}
 	fmt.Println("replying to check upgrade status request - " + string(output) + " - blank?")
-	return &pb.CheckUpgradeStatusReply{Status: string(output), Error: commandStatus}, nil
+	return &pb.CheckUpgradeStatusReply{ProcessList: string(output)}, nil
 }

@@ -69,7 +69,7 @@ var _ = Describe("monitor", func() {
 			client.EXPECT().CheckUpgradeStatus(
 				gomock.Any(),
 				&pb.CheckUpgradeStatusRequest{},
-			).Return(&pb.CheckUpgradeStatusReply{Status: GREP_PG_UPGRADE}, nil)
+			).Return(&pb.CheckUpgradeStatusReply{ProcessList: GREP_PG_UPGRADE}, nil)
 			err := subject.execute(client, shellParser, buffer)
 
 			Expect(err).ToNot(HaveOccurred())
@@ -81,7 +81,7 @@ var _ = Describe("monitor", func() {
 			client.EXPECT().CheckUpgradeStatus(
 				gomock.Any(),
 				&pb.CheckUpgradeStatusRequest{},
-			).Return(&pb.CheckUpgradeStatusReply{Status: "random string"}, nil)
+			).Return(&pb.CheckUpgradeStatusReply{ProcessList: "random string"}, nil)
 			err := subject.execute(client, shellParser, buffer)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(string(buffer.Contents())).To(ContainSubstring("inactive"))
@@ -111,7 +111,7 @@ var _ = Describe("monitor", func() {
 				client.EXPECT().CheckUpgradeStatus(
 					gomock.Any(),
 					&pb.CheckUpgradeStatusRequest{},
-				).Return(&pb.CheckUpgradeStatusReply{Status: "random string"}, errors.New("connection failed"))
+				).Return(&pb.CheckUpgradeStatusReply{ProcessList: "random string"}, errors.New("connection failed"))
 				err := subject.execute(client, shellParser, buffer)
 
 				Expect(err).To(HaveOccurred())

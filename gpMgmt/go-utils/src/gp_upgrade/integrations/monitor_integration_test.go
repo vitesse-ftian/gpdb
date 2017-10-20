@@ -39,7 +39,7 @@ func (s *mockSomething) TransmitState(ctx context.Context, in *idl.TransmitState
 }
 
 func (s *mockSomething) CheckUpgradeStatus(ctx context.Context, in *idl.CheckUpgradeStatusRequest) (*idl.CheckUpgradeStatusReply, error) {
-	return &idl.CheckUpgradeStatusReply{Status: s.reply, Error: ""}, nil
+	return &idl.CheckUpgradeStatusReply{ProcessList: s.reply}, nil
 }
 
 var _ = Describe("monitor", func() {

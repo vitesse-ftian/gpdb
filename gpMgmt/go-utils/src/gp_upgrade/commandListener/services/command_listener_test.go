@@ -65,8 +65,8 @@ var _ = Describe("CommandListenerManager", func() {
 				return []byte("CHANGED"), nil
 			}
 			listener := services.NewCommandListener("some string")
-			resp, _ := listener.CheckUpgradeStatus(nil, nil)
-			Expect(resp.Error).To(BeEmpty())
+			_, err := listener.CheckUpgradeStatus(nil, nil)
+			Expect(err).To(BeNil())
 		})
 	})
 	Describe("check upgrade status", func() {
@@ -76,7 +76,7 @@ var _ = Describe("CommandListenerManager", func() {
 			}
 			listener := services.NewCommandListener("some string")
 			resp, _ := listener.CheckUpgradeStatus(nil, nil)
-			Expect(resp.Error).ToNot(BeEmpty())
+			Expect(resp).To(BeNil())
 		})
 	})
 })

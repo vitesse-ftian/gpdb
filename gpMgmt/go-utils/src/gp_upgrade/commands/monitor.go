@@ -61,14 +61,11 @@ func (cmd MonitorCommand) execute(client pb.CommandListenerClient, shellParser s
 		return errors.New(err.Error())
 	}
 
-	if reply.Error != "" {
-		return errors.New(reply.Error)
-	}
-	log.Printf("Command Listener responded: %s", reply.Status)
+	log.Printf("Command Listener responded: %s", reply.ProcessList)
 
 	status := "active"
 
-	if !shellParser.IsPgUpgradeRunning(targetPort, reply.Status) {
+	if !shellParser.IsPgUpgradeRunning(targetPort, reply.ProcessList) {
 		status = "inactive"
 	}
 	msg := fmt.Sprintf(`pg_upgrade state - %s {"segment_id":%d,"host":"%s"}`, status, cmd.SegmentID, cmd.Host)
