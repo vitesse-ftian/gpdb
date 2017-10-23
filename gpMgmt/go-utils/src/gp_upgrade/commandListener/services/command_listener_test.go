@@ -4,22 +4,20 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	"context"
 	"github.com/pkg/errors"
 	"gp_upgrade/commandListener/services"
 	"gp_upgrade/utils"
 )
 
 var _ = Describe("CommandListener", func() {
-	var (
-		storedExecCmdOutput func(name string, args ...string) ([]byte, error)
-	)
 
 	BeforeEach(func() {
-		storedExecCmdOutput = utils.System.ExecCmdOutput
 	})
 
 	AfterEach(func() {
-		utils.System.ExecCmdOutput = storedExecCmdOutput
+		//any mocking of utils.System function pointers should be reset by calling InitializeSystemFunctions
+		utils.InitializeSystemFunctions()
 	})
 	Describe("check upgrade status", func() {
 		It("returns the shell command output", func() {
@@ -27,7 +25,7 @@ var _ = Describe("CommandListener", func() {
 				return []byte("shell command output"), nil
 			}
 			listener := services.NewCommandListener()
-			resp, err := listener.CheckUpgradeStatus(nil, nil)
+			resp, err := listener.CheckUpgradeStatus(context.TODO(), nil)
 			Expect(resp.ProcessList).To(Equal("shell command output"))
 			Expect(err).To(BeNil())
 		})
@@ -37,7 +35,7 @@ var _ = Describe("CommandListener", func() {
 				return []byte("stdout during error"), errors.New("couldn't find bash")
 			}
 			listener := services.NewCommandListener()
-			resp, err := listener.CheckUpgradeStatus(nil, nil)
+			resp, err := listener.CheckUpgradeStatus(context.TODO(), nil)
 			Expect(resp).To(BeNil())
 			Expect(err.Error()).To(Equal("couldn't find bash"))
 		})

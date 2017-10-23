@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	gpbackupUtils "github.com/greenplum-db/gpbackup/utils"
 	_ "github.com/lib/pq"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -13,6 +14,8 @@ import (
 
 func main() {
 	debug.SetTraceback("all")
+	//empty logdir defaults to ~/gpAdminLogs
+	gpbackupUtils.InitializeLogging("command listener", "")
 
 	var masterHost string
 	var host string

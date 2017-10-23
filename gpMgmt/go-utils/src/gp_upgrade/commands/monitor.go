@@ -11,8 +11,8 @@ import (
 	pb "gp_upgrade/idl"
 	"gp_upgrade/shellParsers"
 
+	gpbackupUtils "github.com/greenplum-db/gpbackup/utils"
 	"github.com/pkg/errors"
-	"log"
 )
 
 const (
@@ -31,7 +31,7 @@ type MonitorCommand struct {
 func (cmd MonitorCommand) Execute([]string) error {
 	conn, err := grpc.Dial(address, grpc.WithInsecure())
 	if err != nil {
-		log.Fatalf("did not connect: %v", err)
+		gpbackupUtils.GetLogger().Fatal(err, "did not connect")
 	}
 	if err != nil {
 		return errors.New(err.Error())
@@ -61,7 +61,7 @@ func (cmd MonitorCommand) execute(client pb.CommandListenerClient, shellParser s
 		return errors.New(err.Error())
 	}
 
-	log.Printf("Command Listener responded: %s", reply.ProcessList)
+	gpbackupUtils.GetLogger().Info("Command Listener responded: %s", reply.ProcessList)
 
 	status := "active"
 

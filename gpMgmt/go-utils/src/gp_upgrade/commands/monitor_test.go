@@ -14,6 +14,8 @@ import (
 	"gp_upgrade/testUtils"
 
 	"github.com/golang/mock/gomock"
+	"github.com/greenplum-db/gpbackup/testutils"
+	"github.com/greenplum-db/gpbackup/utils"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
@@ -36,15 +38,19 @@ var _ = Describe("monitor", func() {
 	var (
 		saveHomeDir string
 		subject     MonitorCommand
-		buffer      *gbytes.Buffer
 		shellParser *shellParsers.RealShellParser
 		conn        grpc.ClientConn
 		client      *mockpb.MockCommandListenerClient
 		t           *testing.T
 		ctrl        *gomock.Controller
+		testLogger  *utils.Logger
+		testStdout  *gbytes.Buffer
+		testStderr  *gbytes.Buffer
+		testLogfile *gbytes.Buffer
 	)
 
 	BeforeEach(func() {
+		testLogger, testStdout, testStderr, testLogfile = testutils.SetupTestLogger()
 		saveHomeDir = testUtils.ResetTempHomeDir()
 		testUtils.WriteSampleConfig()
 
@@ -52,7 +58,6 @@ var _ = Describe("monitor", func() {
 
 		shellParser = &shellParsers.RealShellParser{}
 
-		buffer = gbytes.NewBuffer()
 		conn = grpc.ClientConn{}
 		ctrl = gomock.NewController(t)
 		client = mockpb.NewMockCommandListenerClient(ctrl)
@@ -70,11 +75,11 @@ var _ = Describe("monitor", func() {
 				gomock.Any(),
 				&pb.CheckUpgradeStatusRequest{},
 			).Return(&pb.CheckUpgradeStatusReply{ProcessList: GREP_PG_UPGRADE}, nil)
-			err := subject.execute(client, shellParser, buffer)
+			err := subject.execute(client, shellParser, testStdout)
 
 			Expect(err).ToNot(HaveOccurred())
-			Expect(string(buffer.Contents())).To(ContainSubstring(fmt.Sprintf(`pg_upgrade state - active`)))
-			Expect(string(buffer.Contents())).To(HaveSuffix("\n"))
+			Expect(string(testStdout.Contents())).To(ContainSubstring(fmt.Sprintf(`pg_upgrade state - active`)))
+			Expect(string(testStdout.Contents())).To(HaveSuffix("\n"))
 		})
 
 		It("parses 'inactive' status correctly", func() {
@@ -82,10 +87,10 @@ var _ = Describe("monitor", func() {
 				gomock.Any(),
 				&pb.CheckUpgradeStatusRequest{},
 			).Return(&pb.CheckUpgradeStatusReply{ProcessList: "random string"}, nil)
-			err := subject.execute(client, shellParser, buffer)
+			err := subject.execute(client, shellParser, testStdout)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(string(buffer.Contents())).To(ContainSubstring("inactive"))
-			Expect(string(buffer.Contents())).To(HaveSuffix("\n"))
+			Expect(string(testStdout.Contents())).To(ContainSubstring("inactive"))
+			Expect(string(testStdout.Contents())).To(HaveSuffix("\n"))
 		})
 	})
 
@@ -93,14 +98,14 @@ var _ = Describe("monitor", func() {
 		It("returns an error when the configuration cannot be read", func() {
 			os.RemoveAll(config.GetConfigFilePath())
 
-			err := subject.execute(client, shellParser, buffer)
+			err := subject.execute(client, shellParser, testStdout)
 
 			Expect(err).To(HaveOccurred())
 		})
 
 		It("returns an error when the configuration has no entry for the segment-id specified by user", func() {
 			ioutil.WriteFile(config.GetConfigFilePath(), []byte("[]"), 0600)
-			err := subject.execute(client, shellParser, buffer)
+			err := subject.execute(client, shellParser, testStdout)
 
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("not known in this cluster configuration"))
@@ -112,7 +117,7 @@ var _ = Describe("monitor", func() {
 					gomock.Any(),
 					&pb.CheckUpgradeStatusRequest{},
 				).Return(&pb.CheckUpgradeStatusReply{ProcessList: "random string"}, errors.New("connection failed"))
-				err := subject.execute(client, shellParser, buffer)
+				err := subject.execute(client, shellParser, testStdout)
 
 				Expect(err).To(HaveOccurred())
 			})

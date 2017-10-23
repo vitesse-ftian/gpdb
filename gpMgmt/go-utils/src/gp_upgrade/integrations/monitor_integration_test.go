@@ -17,6 +17,9 @@ import (
 	"io"
 	"net"
 
+	"github.com/greenplum-db/gpbackup/testutils"
+	"github.com/greenplum-db/gpbackup/utils"
+	"github.com/onsi/gomega/gbytes"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"gp_upgrade/idl"
@@ -47,6 +50,10 @@ var _ = Describe("monitor", func() {
 		server           *grpc.Server
 		connCloser       io.Closer
 		clsClient        idl.CommandListenerClient
+		testLogger       *utils.Logger
+		testStdout       *gbytes.Buffer
+		testStderr       *gbytes.Buffer
+		testLogfile      *gbytes.Buffer
 	)
 
 	var startGRPCServer = func(cls idl.CommandListenerServer) (*grpc.Server, string) {
@@ -67,6 +74,7 @@ var _ = Describe("monitor", func() {
 	}
 
 	BeforeEach(func() {
+		testLogger, testStdout, testStderr, testLogfile = testutils.SetupTestLogger()
 		_, this_file_path, _, _ := runtime.Caller(0)
 		private_key_path = path.Join(path.Dir(this_file_path), "sshd/fake_private_key.pem")
 		fixture_path = path.Join(path.Dir(this_file_path), "fixtures")
