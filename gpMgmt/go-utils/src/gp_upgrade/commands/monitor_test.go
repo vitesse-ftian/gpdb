@@ -123,7 +123,9 @@ var _ = Describe("monitor", func() {
 			})
 		})
 	})
+
 	// TODO investigate why this is passing and how?
+	// Because the agent isn't running, and this is running live, so it gets an error
 	Describe("errors", func() {
 		Context("when private key is not found", func() {
 			It("returns an error", func() {

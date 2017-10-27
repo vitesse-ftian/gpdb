@@ -34,7 +34,8 @@ dependencies :
 		go get github.com/spf13/cobra
 		go get github.com/pkg/errors
 		go get google.golang.org/grpc
-	go get github.com/golang/mock/gomock
+		go get github.com/golang/mock/gomock
+		go get github.com/cloudfoundry/gosigar
 		go get
 # Counterfeiter is not a proper dependency of the app. It is only used occasionally to generate a test class that
 # is then checked in.  At the time of that generation, it can be added back to run the dependency list, temporarily.

@@ -13,8 +13,13 @@ message CheckUpgradeStatusReply {
     string process_list = 1;
 }
 
+message FileSysUsage {
+    string filesystem = 1;
+    double usage = 2;
+}
+
 message CheckDiskUsageRequest {}
 
 message CheckDiskUsageReply {
-    string filesystem_usage_list = 1;
+    repeated FileSysUsage list_of_file_sys_usage = 1;
 }

@@ -4,25 +4,34 @@ import (
 	"context"
 	"fmt"
 
+	"gp_upgrade/config"
 	pb "gp_upgrade/idl"
 	"io"
 )
 
 type Hub struct{}
 
-func (h Hub) CheckDiskUsage(clients []pb.CommandListenerClient, writer io.Writer) {
-	fmt.Fprint(writer, "CheckDiskUsageCommand Execute")
+func (h Hub) CheckDiskUsage(clients []config.ClientAndHostname, writer io.Writer) {
 
-	var diskUsageResults []string
+	//var diskUsageResults []string
 
 	for i := 0; i < len(clients); i++ {
-		reply, err := clients[i].CheckDiskUsage(context.Background(), &pb.CheckDiskUsageRequest{})
+		reply, err := clients[i].Client.CheckDiskUsage(context.Background(), &pb.CheckDiskUsageRequest{})
 		if err != nil {
-			//todo: get hostname from clientconn?
-			fmt.Fprint(writer, "Could not get disk usage from: "+err.Error())
+			fmt.Fprint(writer, fmt.Sprintf("diskspace check - WARNING - unable to connect to %s\n", clients[i].Hostname))
+		} else {
+			noIssuesYet := true
+			for _, line := range reply.ListOfFileSysUsage {
+				if line.Usage >= 80 {
+					writer.Write([]byte(fmt.Sprintf(`diskspace check - %s - WARNING %s %.f%% use\n`,
+						clients[i].Hostname, line.Filesystem, line.Usage)))
+					noIssuesYet = false
+				}
+			}
+			if noIssuesYet {
+				writer.Write([]byte("gp_upgrade: Disk Usage Check [OK]\n"))
+			}
 		}
-		diskUsageResults = append(diskUsageResults, reply.FilesystemUsageList)
+		// TODO: do we need to close the connection (which at this point is internal to the Client)?
 	}
-
-	fmt.Fprint(writer, "gp_upgrade: Disk Usage Check [OK]\n")
 }

@@ -12,17 +12,25 @@ const (
 	port = "6416"
 )
 
+type ClientAndHostname struct {
+	Client   pb.CommandListenerClient
+	Hostname string
+}
+
 type RPCClients struct{}
 
-func (helper RPCClients) GetRPCClients() []pb.CommandListenerClient {
+func (helper RPCClients) GetRPCClients() []ClientAndHostname {
 	reader := Reader{}
 	hostnames := reader.GetHostnames()
-	var clients []pb.CommandListenerClient
+	var clients []ClientAndHostname
 	for i := 0; i < len(hostnames); i++ {
 		conn, err := grpc.Dial(hostnames[i]+":"+port, grpc.WithInsecure())
 		if err == nil {
-			clients = append(clients, pb.NewCommandListenerClient(conn))
-			defer conn.Close()
+			clientAndHost := ClientAndHostname{
+				Client:   pb.NewCommandListenerClient(conn),
+				Hostname: hostnames[i],
+			}
+			clients = append(clients, clientAndHost)
 		} else {
 			fmt.Println("ERROR: couldn't get gRPC conn to " + hostnames[i])
 		}

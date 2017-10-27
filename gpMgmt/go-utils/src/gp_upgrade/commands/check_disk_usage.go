@@ -34,15 +34,24 @@ func (cmd CheckDiskUsageCommand) Execute() {
 }
 
 func (cmd CheckDiskUsageCommand) execute(outputWriter io.Writer, clients []pb.CommandListenerClient) {
-	var diskUsageResults []string
+	//var diskUsageResults []string
 
 	for i := 0; i < len(clients); i++ {
 		reply, err := clients[i].CheckDiskUsage(context.Background(), &pb.CheckDiskUsageRequest{})
 		if err != nil {
-			//todo: get hostname from clientconn?
 			fmt.Println("Could not get disk usage from: " + err.Error())
 		}
-		diskUsageResults = append(diskUsageResults, reply.FilesystemUsageList)
+		//todo: get hostname from clientconn?
+		foundAnyTooFull := false
+		for _, line := range reply.ListOfFileSysUsage {
+			if line.Usage >= 80 {
+				outputWriter.Write([]byte(fmt.Sprintf("diskspace check - hostA - WARNING %s %d use", line.Filesystem, line.Usage)))
+				foundAnyTooFull = true
+			}
+		}
+		if !foundAnyTooFull {
+			outputWriter.Write([]byte("diskspace check - hostA - OK"))
+		}
 	}
 	fmt.Fprint(outputWriter, "gp_upgrade: Disk Usage Check [OK]\n")
 }
