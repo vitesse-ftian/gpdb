@@ -67,7 +67,7 @@ protobuf :
 
 build :
 		$(TARGET_PLATFORM) go build -ldflags "-X gp_upgrade/commands.GpdbVersion=$(GPDB_VERSION)" -o $(GO_UTILS_DIR)/bin/$(MODULE_NAME)$(PLATFORM_POSTFIX)
-		$(TARGET_PLATFORM) go build -ldflags "-X gp_upgrade/commands.GpdbVersion=$(GPDB_VERSION)" -o $(GO_UTILS_DIR)/bin/command_listener$(PLATFORM_POSTFIX) $(MODULE_NAME)/commandListener
+		$(TARGET_PLATFORM) go build -ldflags "-X gp_upgrade/commands.GpdbVersion=$(GPDB_VERSION)" -o $(GO_UTILS_DIR)/bin/gp_upgrade_agent$(PLATFORM_POSTFIX) $(MODULE_NAME)/agent
 
 coverage: build
 		./scripts/run_coverage.sh

@@ -9,7 +9,7 @@ import (
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
-	"gp_upgrade/commandListener/services"
+	"gp_upgrade/agent/services"
 	pb "gp_upgrade/idl"
 	"net"
 )
