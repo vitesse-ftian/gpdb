@@ -36,7 +36,7 @@ dependencies :
 		go get google.golang.org/grpc
 		go get github.com/golang/mock/gomock
 		go get github.com/cloudfoundry/gosigar
-		go get
+		go get gopkg.in/DATA-DOG/go-sqlmock.v1
 # Counterfeiter is not a proper dependency of the app. It is only used occasionally to generate a test class that
 # is then checked in.  At the time of that generation, it can be added back to run the dependency list, temporarily.
 #		go get github.com/maxbrunsfeld/counterfeiter
@@ -66,8 +66,9 @@ protobuf :
 		protoc -I idl/ idl/*.proto --go_out=plugins=grpc:idl
 
 build :
-		$(TARGET_PLATFORM) go build -ldflags "-X gp_upgrade/commands.GpdbVersion=$(GPDB_VERSION)" -o $(GO_UTILS_DIR)/bin/$(MODULE_NAME)$(PLATFORM_POSTFIX)
+		$(TARGET_PLATFORM) go build -ldflags "-X gp_upgrade/commands.GpdbVersion=$(GPDB_VERSION)" -o $(GO_UTILS_DIR)/bin/$(MODULE_NAME)$(PLATFORM_POSTFIX) $(MODULE_NAME)/cli
 		$(TARGET_PLATFORM) go build -ldflags "-X gp_upgrade/commands.GpdbVersion=$(GPDB_VERSION)" -o $(GO_UTILS_DIR)/bin/gp_upgrade_agent$(PLATFORM_POSTFIX) $(MODULE_NAME)/agent
+		$(TARGET_PLATFORM) go build -ldflags "-X gp_upgrade/commands.GpdbVersion=$(GPDB_VERSION)" -o $(GO_UTILS_DIR)/bin/gp_upgrade_hub$(PLATFORM_POSTFIX) $(MODULE_NAME)/hub
 
 coverage: build
 		./scripts/run_coverage.sh

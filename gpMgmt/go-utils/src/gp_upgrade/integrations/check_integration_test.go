@@ -27,6 +27,8 @@ var _ = Describe("check", func() {
 		os.Setenv("HOME", save_home_dir)
 	})
 
+	// TODO: Eventually move this to the hub test logic
+
 	Describe("when a greenplum master db on localhost is up and running", func() {
 		It("happy: the database configuration is saved to a specified location", func() {
 			session := runCommand("check", "--master-host", "localhost")

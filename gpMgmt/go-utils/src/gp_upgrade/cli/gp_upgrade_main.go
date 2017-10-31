@@ -6,6 +6,7 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"gp_upgrade/cli/commanders"
 	"gp_upgrade/commands"
 	"gp_upgrade/config"
 	"log"
@@ -25,6 +26,22 @@ func main() {
 	var segmentID int
 	var privateKey string
 	var user string
+
+	var cmdPrepare = &cobra.Command{
+		Use:   "prepare",
+		Short: "subcommands to help you get ready for a gp_upgrade",
+		Long:  "subcommands to help you get ready for a gp_upgrade",
+	}
+
+	var cmdPrepareSubStartHub = &cobra.Command{
+		Use:   "start-hub",
+		Short: "starts the hub",
+		Long:  "starts the hub",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			preparer := commanders.Preparer{}
+			return preparer.StartHub()
+		},
+	}
 
 	var cmdCheck = &cobra.Command{
 		Use:   "check",
@@ -125,12 +142,15 @@ func main() {
 	//TODO this could be improved.
 	// Also, if another command is added, the message will need to be updated.
 	if len(os.Args[1:]) < 1 {
-		log.Fatal("Please specify one command of: check, monitor or version")
+		log.Fatal("Please specify one command of: prepare, check, monitor, or version")
 	}
 	// all root level
-	rootCmd.AddCommand(cmdCheck, cmdVersion, cmdMonitor)
+	rootCmd.AddCommand(cmdPrepare, cmdCheck, cmdVersion, cmdMonitor)
 
-	// subcommands
+	// prepare subcommmands
+	cmdPrepare.AddCommand(cmdPrepareSubStartHub)
+
+	// check subcommands
 	cmdCheck.AddCommand(cmdCheckSubCheckVersionCommand)
 	cmdCheck.AddCommand(cmdCheckSubObjectCountCommand)
 	cmdCheck.AddCommand(cmdCheckSubDiskSpaceCommand)

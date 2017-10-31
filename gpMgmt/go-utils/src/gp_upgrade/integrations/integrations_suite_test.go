@@ -36,7 +36,7 @@ var (
 
 var _ = BeforeSuite(func() {
 	var err error
-	commandPath, err = Build("gp_upgrade") // if you want build flags, do a separate Build() in a specific integration test
+	commandPath, err = Build("gp_upgrade/cli") // if you want build flags, do a separate Build() in a specific integration test
 	Expect(err).NotTo(HaveOccurred())
 
 	sshdPath, err = Build("gp_upgrade/integrations/sshd")
