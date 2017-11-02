@@ -26,7 +26,6 @@ dependencies :
 		go get github.com/onsi/ginkgo/ginkgo
 		go get golang.org/x/tools/cmd/goimports
 		go get github.com/onsi/gomega
-		go get github.com/jessevdk/go-flags
 		go get golang.org/x/crypto/ssh
 		go get -u github.com/golang/lint/golint
 		go get github.com/alecthomas/gometalinter
@@ -79,5 +78,7 @@ install : build
 
 clean:
 	rm -f ../../bin/gp_upgrade
+	rm -f ../../bin/gp_upgrade_hub
+	rm -f ../../bin/gp_upgrade_agent
 	rm -rf /tmp/go-build*
 	rm -rf /tmp/ginkgo*

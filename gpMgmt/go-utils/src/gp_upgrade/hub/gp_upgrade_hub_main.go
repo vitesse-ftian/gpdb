@@ -1,6 +1,8 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // Makefile to build this
 // This file's main() to daemonize a gRPC server
@@ -10,4 +12,7 @@ import "fmt"
 
 func main() {
 	fmt.Println("hello world")
+	for i := 0; i < 100; {
+
+	}
 }

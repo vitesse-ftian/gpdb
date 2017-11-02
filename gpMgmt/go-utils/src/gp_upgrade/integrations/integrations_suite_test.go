@@ -42,6 +42,10 @@ var _ = BeforeSuite(func() {
 	sshdPath, err = Build("gp_upgrade/integrations/sshd")
 	Expect(err).NotTo(HaveOccurred())
 
+	// for master_only_integration_test, in `gp_upgrade prepare start-hub`. Fencepost problem where we want to clean up before & after each test
+	pkillCmd := exec.Command("pkill", "gp_upgrade_hub")
+	pkillCmd.Run()
+
 	_, this_file_path, _, _ := runtime.Caller(0)
 	fixture_path = path.Join(path.Dir(this_file_path), "fixtures")
 })

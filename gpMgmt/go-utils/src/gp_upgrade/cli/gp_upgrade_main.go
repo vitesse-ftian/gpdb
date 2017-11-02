@@ -17,7 +17,7 @@ import (
 func main() {
 	debug.SetTraceback("all")
 	//empty logdir defaults to ~/gpAdminLogs
-	gpbackupUtils.InitializeLogging("command listener", "")
+	gpbackupUtils.InitializeLogging("gp_upgrade_cli", "")
 
 	var masterHost string
 	var host string
@@ -38,6 +38,7 @@ func main() {
 		Short: "starts the hub",
 		Long:  "starts the hub",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			gpbackupUtils.InitializeLogging("gp_upgrade_hub", "")
 			preparer := commanders.Preparer{}
 			return preparer.StartHub()
 		},
