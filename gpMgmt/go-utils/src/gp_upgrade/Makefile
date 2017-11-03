@@ -13,7 +13,8 @@ GPDB_VERSION := $(shell ../../../../getversion --short)
 # BUILD_TARGET=linux for linux and
 # BUILD_TARGET=darwin macos.
 # See go build GOOS for more information.
-PLATFORM_POSTFIX := $(if $(BUILD_TARGET),.$(BUILD_TARGET),)
+BRANCH := $(shell git for-each-ref --format='%(objectname) %(refname:short)' refs/heads | awk "/^$$(git rev-parse HEAD)/ {print \$$2}")
+PLATFORM_POSTFIX := $(if $(BUILD_TARGET),.$(BUILD_TARGET).$(BRANCH),)
 TARGET_PLATFORM := $(if $(BUILD_TARGET),GOOS=$(BUILD_TARGET) GOARCH=$(ARCH),)
 
 .NOTPARALLEL:
