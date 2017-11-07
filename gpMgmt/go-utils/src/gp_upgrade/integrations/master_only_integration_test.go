@@ -1,11 +1,14 @@
 package integrations_test
 
 import (
+	"log"
+	"os"
+	"os/exec"
+	"path"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gexec"
-	"os"
-	"os/exec"
 )
 
 var _ = Describe("integration tests running on master only", func() {
@@ -17,14 +20,32 @@ var _ = Describe("integration tests running on master only", func() {
 				pkillCmd.Run()
 			})
 
-			It("finds the right hub binary and starts a daemonized process", func() {
+			basicHappyPathCheck := func() {
 				gpUpgradeSession := runCommand("prepare", "start-hub")
 				Eventually(gpUpgradeSession).Should(Exit(0))
 
-				verificationCmd := exec.Command("bash", "-c", "ps -ef | grep -q gp_upgrade_hub")
+				verificationCmd := exec.Command("bash", "-c", `ps -ef | grep -q "[g]p_upgrade_hub"`)
 				verificationSession, err := Start(verificationCmd, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
 				Eventually(verificationSession).Should(Exit(0))
+			}
+
+			It("finds the right hub binary and starts a daemonized process", basicHappyPathCheck)
+
+			It("works even if run from the same directory as where the binaries are", func() {
+				hubDirectoryPath := path.Dir(hubBinaryPath)
+				previousDirectory, err := os.Getwd()
+				if err != nil {
+					log.Fatal(err)
+				}
+				defer os.Chdir(previousDirectory)
+
+				err = os.Chdir(hubDirectoryPath)
+				if err != nil {
+					log.Fatal(err)
+				}
+
+				basicHappyPathCheck()
 			})
 
 			It("returns error if gp_upgrade_hub is already running", func() {

@@ -1,6 +1,8 @@
 package integrations_test
 
 import (
+	"os"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gexec"
@@ -28,16 +30,34 @@ func TestCommands(t *testing.T) {
 }
 
 var (
-	commandPath  string
-	sshd         *exec.Cmd
-	fixture_path string
-	sshdPath     string
+	cliBinaryPath            string
+	hubBinaryPath            string
+	sshd                     *exec.Cmd
+	fixture_path             string
+	sshdPath                 string
+	userPreviousPathVariable string
 )
 
 var _ = BeforeSuite(func() {
 	var err error
-	commandPath, err = Build("gp_upgrade/cli") // if you want build flags, do a separate Build() in a specific integration test
+	cliBinaryPath, err = Build("gp_upgrade/cli") // if you want build flags, do a separate Build() in a specific integration test
 	Expect(err).NotTo(HaveOccurred())
+
+	hubBinaryPath, err = Build("gp_upgrade/hub")
+	Expect(err).NotTo(HaveOccurred())
+	hubDirectoryPath := path.Dir(hubBinaryPath)
+
+	// hub gets built as "hub", but rename for integration tests that expect
+	// "gp_upgrade_hub" to be on the path
+	renamedHubBinaryPath := hubDirectoryPath + "/gp_upgrade_hub"
+	err = os.Rename(hubBinaryPath, renamedHubBinaryPath)
+	Expect(err).NotTo(HaveOccurred())
+	hubBinaryPath = renamedHubBinaryPath
+
+	// put the gp_upgrade_hub on the path don't need to rename the cli nor put
+	// it on the path: integration tests should use RunCommand() below
+	userPreviousPathVariable = os.Getenv("PATH")
+	os.Setenv("PATH", hubDirectoryPath+":"+userPreviousPathVariable)
 
 	sshdPath, err = Build("gp_upgrade/integrations/sshd")
 	Expect(err).NotTo(HaveOccurred())
@@ -102,7 +122,7 @@ func runCommand(args ...string) *Session {
 	// IMPORTANT TEST INFO: exec.Command forks and runs in a separate process,
 	// which has its own Golang context; any mocks/fakes you set up in
 	// the test context will NOT be meaningful in the new exec.Command context.
-	cmd := exec.Command(commandPath, args...)
+	cmd := exec.Command(cliBinaryPath, args...)
 	session, err := Start(cmd, GinkgoWriter, GinkgoWriter)
 	Expect(err).NotTo(HaveOccurred())
 	<-session.Exited

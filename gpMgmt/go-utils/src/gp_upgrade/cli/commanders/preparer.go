@@ -36,7 +36,7 @@ func (p Preparer) StartHub() error {
 }
 
 func howManyHubsRunning() (int, error) {
-	howToLookForHub := "ps -ef | grep -c [g]p_upgrade_hub" // use square brackets to avoid finding yourself in matches
+	howToLookForHub := `ps -ef | grep -c "[g]p_upgrade_hub"` // use square brackets to avoid finding yourself in matches
 	output, err := exec.Command("bash", "-c", howToLookForHub).Output()
 	value, convErr := strconv.Atoi(strings.TrimSpace(string(output)))
 	if convErr != nil {
