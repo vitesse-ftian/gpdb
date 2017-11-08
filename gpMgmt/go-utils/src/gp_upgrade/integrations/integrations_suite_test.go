@@ -1,27 +1,23 @@
 package integrations_test
 
 import (
+	"gp_upgrade/sshClient"
+	"gp_upgrade/testUtils"
+
+	"fmt"
 	"os"
+	"os/exec"
+	"path"
+	"reflect"
+	"runtime"
+	"testing"
+	"time"
+
+	"github.com/pkg/errors"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gexec"
-
-	"os/exec"
-	"testing"
-
-	"gp_upgrade/testUtils"
-
-	"path"
-
-	"fmt"
-	"gp_upgrade/sshClient"
-	"reflect"
-	"time"
-
-	"runtime"
-
-	"github.com/pkg/errors"
 )
 
 func TestCommands(t *testing.T) {

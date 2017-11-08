@@ -44,10 +44,6 @@ dependencies :
 format :
 		gofmt -s -w .
 
-generate_mock :
-	go get github.com/golang/mock/mockgen
-	mockgen -source idl/command.pb.go -imports ".=gp_upgrade/idl" > mock_idl/command_mock.pb.go
-
 lint :
 		gometalinter --config=gometalinter.config ./...
 
@@ -64,6 +60,9 @@ test : format lint unit integration
 
 protobuf :
 		protoc -I idl/ idl/*.proto --go_out=plugins=grpc:idl
+		go get github.com/golang/mock/mockgen
+		mockgen -source idl/cli_to_hub.pb.go -imports ".=gp_upgrade/idl" > mock_idl/cli_to_hub_mock.pb.go
+		mockgen -source idl/command.pb.go -imports ".=gp_upgrade/idl" > mock_idl/command_mock.pb.go
 
 build :
 		$(TARGET_PLATFORM) go build -ldflags "-X gp_upgrade/commands.GpdbVersion=$(GPDB_VERSION)" -o $(GO_UTILS_DIR)/bin/$(MODULE_NAME)$(PLATFORM_POSTFIX) $(MODULE_NAME)/cli

@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package idl;
+
+service CliToHub {
+    rpc StatusUpgrade(StatusUpgradeRequest) returns (StatusUpgradeReply) {}
+}
+
+message StatusUpgradeRequest {}
+
+message StatusUpgradeReply {
+    repeated UpgradeStepStatus listOfUpgradeStepStatuses = 1;
+}
+
+message UpgradeStepStatus {
+    UpgradeSteps step = 1;
+    StepStatus status = 2;
+}
+
+enum UpgradeSteps {
+    UNKNOWN_STEP = 0; // http://androiddevblog.com/protocol-buffers-pitfall-adding-enum-values/
+    CHECK_CONFIG = 1;
+    SEGINSTALL = 2;
+}
+
+enum StepStatus {
+    UNKNOWN_STATUS = 0; // http://androiddevblog.com/protocol-buffers-pitfall-adding-enum-values/
+    PENDING = 1;
+    RUNNING = 2;
+    COMPLETE = 3;
+    FAILED = 4;
+}

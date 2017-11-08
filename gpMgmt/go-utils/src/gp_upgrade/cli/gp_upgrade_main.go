@@ -2,16 +2,24 @@ package main
 
 import (
 	"fmt"
-	gpbackupUtils "github.com/greenplum-db/gpbackup/utils"
-	_ "github.com/lib/pq"
-	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
 	"gp_upgrade/cli/commanders"
 	"gp_upgrade/commands"
 	"gp_upgrade/config"
 	"log"
 	"os"
 	"runtime/debug"
+
+	pb "gp_upgrade/idl"
+
+	gpbackupUtils "github.com/greenplum-db/gpbackup/utils"
+	_ "github.com/lib/pq"
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
+	"google.golang.org/grpc"
+)
+
+const (
+	hubPort = "7527"
 )
 
 func main() {
@@ -38,9 +46,37 @@ func main() {
 		Short: "starts the hub",
 		Long:  "starts the hub",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			gpbackupUtils.InitializeLogging("gp_upgrade_hub", "")
+			gpbackupUtils.InitializeLogging("gp_upgrade_cli", "")
 			preparer := commanders.Preparer{}
 			return preparer.StartHub()
+		},
+	}
+
+	var cmdStatus = &cobra.Command{
+		Use:   "status",
+		Short: "subcommands to show the status of a gp_upgrade",
+		Long:  "subcommands to show the status of a gp_upgrade",
+	}
+
+	var cmdStatusSubUpgrade = &cobra.Command{
+		Use:   "upgrade",
+		Short: "the status of the upgrade",
+		Long:  "the status of the upgrade",
+		Run: func(cmd *cobra.Command, args []string) {
+			gpbackupUtils.InitializeLogging("gp_upgrade_cli", "")
+
+			conn, connConfigErr := grpc.Dial("localhost:"+hubPort, grpc.WithInsecure())
+			if connConfigErr != nil {
+				fmt.Println(connConfigErr)
+				os.Exit(1)
+			}
+			client := pb.NewCliToHubClient(conn)
+			reporter := commanders.NewReporter(client)
+			err := reporter.OverallUpgradeStatus()
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
 		},
 	}
 
@@ -146,10 +182,14 @@ func main() {
 		log.Fatal("Please specify one command of: prepare, check, monitor, or version")
 	}
 	// all root level
-	rootCmd.AddCommand(cmdPrepare, cmdCheck, cmdVersion, cmdMonitor)
+	rootCmd.AddCommand(cmdPrepare, cmdStatus, cmdCheck, cmdVersion,
+		cmdMonitor)
 
 	// prepare subcommmands
 	cmdPrepare.AddCommand(cmdPrepareSubStartHub)
+
+	// status subcommands
+	cmdStatus.AddCommand(cmdStatusSubUpgrade)
 
 	// check subcommands
 	cmdCheck.AddCommand(cmdCheckSubCheckVersionCommand)
