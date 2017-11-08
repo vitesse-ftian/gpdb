@@ -91,9 +91,6 @@ func main() {
 			return nil
 		},
 		Args: cobra.MinimumNArgs(0),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return commands.NewCheckCommand(masterHost, dbPort).Execute(args)
-		},
 	}
 
 	cmdCheck.PersistentFlags().StringVar(&masterHost, "master-host", "", "host IP for master")
@@ -108,7 +105,7 @@ func main() {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return commands.CheckVersionCommand{
 				MasterHost: masterHost,
-				MasterPort: dbPort,
+				MasterPort: int(dbPort),
 			}.Execute(args)
 		},
 	}
@@ -133,6 +130,26 @@ func main() {
 			clients := config.RPCClients{}.GetRPCClients()
 			hub := commands.Hub{}
 			hub.CheckDiskUsage(clients, os.Stdout)
+		},
+	}
+
+	var cmdCheckSubConfigCommand = &cobra.Command{
+		Use:   "config",
+		Short: "gather cluster configuration",
+		Long:  "gather cluster configuration",
+		Run: func(cmd *cobra.Command, args []string) {
+			conn, connConfigErr := grpc.Dial("localhost:"+hubPort,
+				grpc.WithInsecure())
+			if connConfigErr != nil {
+				fmt.Println(connConfigErr)
+				os.Exit(1)
+			}
+			client := pb.NewCliToHubClient(conn)
+			err := commanders.NewCheckConfigRequest(client).Execute(dbPort)
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
 		},
 	}
 
@@ -195,6 +212,8 @@ func main() {
 	cmdCheck.AddCommand(cmdCheckSubCheckVersionCommand)
 	cmdCheck.AddCommand(cmdCheckSubObjectCountCommand)
 	cmdCheck.AddCommand(cmdCheckSubDiskSpaceCommand)
+	cmdCheck.AddCommand(cmdCheckSubConfigCommand)
+
 	//TODO if give a subcommand that doesn't exist, we should give the user feedback
 
 	err := rootCmd.Execute()

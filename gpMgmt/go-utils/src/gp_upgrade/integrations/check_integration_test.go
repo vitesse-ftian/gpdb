@@ -1,6 +1,8 @@
 package integrations_test
 
 import (
+	"os/exec"
+
 	"gp_upgrade/testUtils"
 	"io/ioutil"
 	"os"
@@ -20,18 +22,27 @@ var _ = Describe("check", func() {
 		save_home_dir string
 	)
 
+	killHub := func() {
+		pkillCmd := exec.Command("pkill", "gp_upgrade_hub")
+		pkillCmd.Run()
+	}
+
 	BeforeEach(func() {
 		save_home_dir = testUtils.ResetTempHomeDir()
 	})
+
 	AfterEach(func() {
 		os.Setenv("HOME", save_home_dir)
+		killHub()
 	})
-
-	// TODO: Eventually move this to the hub test logic
 
 	Describe("when a greenplum master db on localhost is up and running", func() {
 		It("happy: the database configuration is saved to a specified location", func() {
-			session := runCommand("check", "--master-host", "localhost")
+
+			prepareSession := runCommand("prepare", "start-hub")
+			Eventually(prepareSession).Should(Exit(0))
+
+			session := runCommand("check", "config", "--master-host", "localhost")
 
 			if session.ExitCode() != 0 {
 				fmt.Println("make sure greenplum is running")

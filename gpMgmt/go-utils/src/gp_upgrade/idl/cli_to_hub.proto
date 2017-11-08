@@ -4,6 +4,7 @@ package idl;
 
 service CliToHub {
     rpc StatusUpgrade(StatusUpgradeRequest) returns (StatusUpgradeReply) {}
+    rpc CheckConfig(CheckConfigRequest) returns (CheckConfigReply) {}
 }
 
 message StatusUpgradeRequest {}
@@ -29,4 +30,13 @@ enum StepStatus {
     RUNNING = 2;
     COMPLETE = 3;
     FAILED = 4;
+}
+
+
+message CheckConfigRequest {
+	int32 dbPort = 1;
+}
+
+message CheckConfigReply {
+    string configStatus  = 1;
 }

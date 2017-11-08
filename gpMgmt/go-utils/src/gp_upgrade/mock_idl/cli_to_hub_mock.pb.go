@@ -53,6 +53,24 @@ func (mr *MockCliToHubClientMockRecorder) StatusUpgrade(ctx, in interface{}, opt
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StatusUpgrade", reflect.TypeOf((*MockCliToHubClient)(nil).StatusUpgrade), varargs...)
 }
 
+// CheckConfig mocks base method
+func (m *MockCliToHubClient) CheckConfig(ctx context.Context, in *CheckConfigRequest, opts ...grpc.CallOption) (*CheckConfigReply, error) {
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "CheckConfig", varargs...)
+	ret0, _ := ret[0].(*CheckConfigReply)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CheckConfig indicates an expected call of CheckConfig
+func (mr *MockCliToHubClientMockRecorder) CheckConfig(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckConfig", reflect.TypeOf((*MockCliToHubClient)(nil).CheckConfig), varargs...)
+}
+
 // MockCliToHubServer is a mock of CliToHubServer interface
 type MockCliToHubServer struct {
 	ctrl     *gomock.Controller
@@ -87,4 +105,17 @@ func (m *MockCliToHubServer) StatusUpgrade(arg0 context.Context, arg1 *StatusUpg
 // StatusUpgrade indicates an expected call of StatusUpgrade
 func (mr *MockCliToHubServerMockRecorder) StatusUpgrade(arg0, arg1 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StatusUpgrade", reflect.TypeOf((*MockCliToHubServer)(nil).StatusUpgrade), arg0, arg1)
+}
+
+// CheckConfig mocks base method
+func (m *MockCliToHubServer) CheckConfig(arg0 context.Context, arg1 *CheckConfigRequest) (*CheckConfigReply, error) {
+	ret := m.ctrl.Call(m, "CheckConfig", arg0, arg1)
+	ret0, _ := ret[0].(*CheckConfigReply)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CheckConfig indicates an expected call of CheckConfig
+func (mr *MockCliToHubServerMockRecorder) CheckConfig(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckConfig", reflect.TypeOf((*MockCliToHubServer)(nil).CheckConfig), arg0, arg1)
 }
