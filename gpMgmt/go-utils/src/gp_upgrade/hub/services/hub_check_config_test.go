@@ -1,46 +1,65 @@
-package commands
+package services_test
 
 import (
-	"database/sql/driver"
-	"gp_upgrade/testUtils"
-
-	"encoding/json"
-	"github.com/pkg/errors"
 	"gp_upgrade/config"
+	"gp_upgrade/db"
+	"gp_upgrade/hub/services"
+	"gp_upgrade/idl"
+	"gp_upgrade/testUtils"
+	"gp_upgrade/utils"
+
 	"io/ioutil"
 	"os"
 
-	"gp_upgrade/utils"
-
-	"gp_upgrade/db"
+	"database/sql/driver"
+	"encoding/json"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"gopkg.in/DATA-DOG/go-sqlmock.v1"
+
+	"github.com/jmoiron/sqlx"
+	"github.com/pkg/errors"
+	sqlmock "gopkg.in/DATA-DOG/go-sqlmock.v1"
 )
 
-var _ = Describe("check tests", func() {
+var _ = Describe("hub", func() {
+	Describe("creates a reply", func() {
+		It("Confirms that config information retrieved and sent", func() {
+			listener := services.NewCliToHubListener()
 
-	var (
-		subject     CheckCommand
-		saveHomeDir string
-	)
+			services.CreateConfigFile = func(db.Connector, config.Store) error {
+				return nil
+			}
 
-	BeforeEach(func() {
-		saveHomeDir = testUtils.ResetTempHomeDir()
-		subject = CheckCommand{}
+			fakeCheckConfigRequest := &idl.CheckConfigRequest{DbPort: 9999}
+			formulatedResponse, err := listener.CheckConfig(nil, fakeCheckConfigRequest)
+			Expect(err).To(BeNil())
+			Expect(formulatedResponse.ConfigStatus).Should(Equal("All good"))
+		})
+
 	})
+	Describe("check config internals", func() {
 
-	AfterEach(func() {
-		os.Setenv("HOME", saveHomeDir)
-	})
+		var (
+			saveHomeDir string
+		)
 
-	Describe("check", func() {
+		BeforeEach(func() {
+			saveHomeDir = testUtils.ResetTempHomeDir()
+			services.CreateConfigFile = func(db.Connector, config.Store) error {
+				return nil
+			}
+		})
+
+		AfterEach(func() {
+			os.Setenv("HOME", saveHomeDir)
+		})
+
 		Describe("happy: the database is running, master-host is provided, and connection is successful", func() {
 			It("writes a file to ~/.gp_upgrade/cluster_config.json with correct json", func() {
 				dbConnector, mock := db.CreateMockDBConn()
 				setupSegmentConfigInDB(mock)
-				err := subject.execute(dbConnector, config.NewWriter())
+				err := services.CreateConfigurationFile(dbConnector, config.NewWriter())
 
 				Expect(err).ToNot(HaveOccurred())
 				Expect(dbConnector.GetConn().Stats().OpenConnections).To(Equal(0))
@@ -56,21 +75,13 @@ var _ = Describe("check tests", func() {
 		})
 
 		Describe("errors", func() {
-			//TODO move this test to integration, since Execute isn't checking params anymore
-			Describe("when the required flag master-host is not specified", func() {
-
-				//It("returns an error", func() {
-				//	err := subject.Execute([]string{})
-				//	Expect(err).To(HaveOccurred())
-				//})
-			})
 			Describe("when the query fails on AO table count", func() {
 
 				It("returns an error", func() {
 					dbConnector, mock := db.CreateMockDBConn()
 					mock.ExpectQuery(SELECT_SEGMENT_CONFIG_QUERY).WillReturnError(errors.New("the query has failed"))
 
-					err := subject.execute(dbConnector, config.NewWriter())
+					err := services.CreateConfigurationFile(dbConnector, config.NewWriter())
 
 					Expect(dbConnector.GetConn().Stats().OpenConnections).To(Equal(0))
 					Expect(err).To(HaveOccurred())
@@ -79,7 +90,7 @@ var _ = Describe("check tests", func() {
 			Describe("when the db dbConn fails", func() {
 				It("returns an error", func() {
 					failingDbConnector := FailingDbConnector{}
-					err := subject.execute(failingDbConnector, nil)
+					err := services.CreateConfigurationFile(failingDbConnector, nil)
 
 					Expect(err).To(HaveOccurred())
 					Expect(err.Error()).To(ContainSubstring("Invalid DB Connection"))
@@ -91,9 +102,8 @@ var _ = Describe("check tests", func() {
 					setupSegmentConfigInDB(mock)
 					err := os.MkdirAll(config.GetConfigDir(), 0500)
 					testUtils.Check("cannot chmod: ", err)
-					subject.MasterHost = "localhost"
 
-					err = subject.execute(dbConnector, config.NewWriter())
+					err = services.CreateConfigurationFile(dbConnector, config.NewWriter())
 
 					Expect(err).To(HaveOccurred())
 					Expect(err.Error()).To(ContainSubstring("open /tmp/gp_upgrade_test_temp_home_dir/.gp_upgrade/cluster_config.json: permission denied"))
@@ -107,10 +117,10 @@ var _ = Describe("check tests", func() {
 					setupSegmentConfigInDB(mock)
 					setupSegmentConfigInDB(mock)
 					mock.ExpectQuery(SELECT_SEGMENT_CONFIG_QUERY).WillReturnError(errors.New("the query has failed"))
-					subject.MasterHost = "localhost"
+					//MasterHost = "localhost"
 
 					fake := FakeWriter{}
-					err := subject.execute(dbConnector, fake)
+					err := services.CreateConfigurationFile(dbConnector, fake)
 
 					Expect(err).To(HaveOccurred())
 					Expect(err.Error()).To(ContainSubstring("I always fail"))
@@ -181,3 +191,14 @@ const (
 
 	SELECT_SEGMENT_CONFIG_QUERY = "select dbid, content.*"
 )
+
+type FailingDbConnector struct{}
+
+func (FailingDbConnector) Connect() error {
+	return errors.New("Invalid DB Connection")
+}
+func (FailingDbConnector) Close() {
+}
+func (FailingDbConnector) GetConn() *sqlx.DB {
+	return nil
+}

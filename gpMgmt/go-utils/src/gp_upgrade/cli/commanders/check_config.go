@@ -2,21 +2,22 @@ package commanders
 
 import (
 	"context"
-	gpbackupUtils "github.com/greenplum-db/gpbackup/utils"
 	pb "gp_upgrade/idl"
+
+	gpbackupUtils "github.com/greenplum-db/gpbackup/utils"
 )
 
-type CheckConfigRequest struct {
+type ConfigChecker struct {
 	client pb.CliToHubClient
 }
 
-func NewCheckConfigRequest(client pb.CliToHubClient) CheckConfigRequest {
-	return CheckConfigRequest{
+func NewConfigChecker(client pb.CliToHubClient) ConfigChecker {
+	return ConfigChecker{
 		client: client,
 	}
 }
 
-func (req CheckConfigRequest) Execute(dbPort int) error {
+func (req ConfigChecker) Execute(dbPort int) error {
 	logger := gpbackupUtils.GetLogger()
 	_, err := req.client.CheckConfig(context.Background(),
 		&pb.CheckConfigRequest{DbPort: int32(dbPort)})

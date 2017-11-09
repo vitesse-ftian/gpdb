@@ -43,7 +43,7 @@ var _ = Describe("check config", func() {
 				&pb.CheckConfigRequest{DbPort: 9999},
 			).Return(fakeCheckConfigReply, nil)
 
-			request := commanders.NewCheckConfigRequest(client)
+			request := commanders.NewConfigChecker(client)
 			err := request.Execute(9999)
 			Expect(err).To(BeNil())
 			Eventually(testStdout).Should(gbytes.Say("Check config request is processed."))
@@ -56,7 +56,7 @@ var _ = Describe("check config", func() {
 				&pb.CheckConfigRequest{DbPort: 9999},
 			).Return(nil, errors.New("Force failure connection"))
 
-			request := commanders.NewCheckConfigRequest(client)
+			request := commanders.NewConfigChecker(client)
 			err := request.Execute(9999)
 			Expect(err).ToNot(BeNil())
 			Eventually(testStderr).Should(gbytes.Say("ERROR - Unable to connect to hub"))

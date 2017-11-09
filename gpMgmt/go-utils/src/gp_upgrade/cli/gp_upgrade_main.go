@@ -145,7 +145,7 @@ func main() {
 				os.Exit(1)
 			}
 			client := pb.NewCliToHubClient(conn)
-			err := commanders.NewCheckConfigRequest(client).Execute(dbPort)
+			err := commanders.NewConfigChecker(client).Execute(dbPort)
 			if err != nil {
 				fmt.Println(err)
 				os.Exit(1)

@@ -1,34 +1,33 @@
-package commands
+package services
 
 import (
 	"gp_upgrade/config"
-
 	"gp_upgrade/db"
+	pb "gp_upgrade/idl"
+	"gp_upgrade/utils"
 
 	"github.com/pkg/errors"
-	"gp_upgrade/utils"
+	"golang.org/x/net/context"
 )
 
-type CheckCommand struct {
-	ObjectCount ObjectCountCommand
-	GPDBVersion CheckVersionCommand
-	MasterHost  string
-	MasterPort  int
-}
+var (
+	CreateConfigFile = CreateConfigurationFile
+)
 
-func NewCheckCommand(host string, port int) CheckCommand {
-	return CheckCommand{
-		MasterHost: host,
-		MasterPort: port,
+func (s *cliToHubListenerImpl) CheckConfig(ctx context.Context,
+	in *pb.CheckConfigRequest) (*pb.CheckConfigReply, error) {
+
+	dbConn := db.NewDBConn("localhost", int(in.DbPort), "template1")
+	err := CreateConfigFile(dbConn, config.NewWriter())
+	replyString := "All good"
+	if err != nil {
+		replyString = err.Error()
 	}
+	reply := &pb.CheckConfigReply{ConfigStatus: replyString}
+	return reply, nil
 }
 
-func (cmd CheckCommand) Execute([]string) error {
-	dbConn := db.NewDBConn(cmd.MasterHost, cmd.MasterPort, "template1")
-	return cmd.execute(dbConn, config.NewWriter())
-}
-
-func (cmd CheckCommand) execute(dbConnector db.Connector, writer config.Store) error {
+func CreateConfigurationFile(dbConnector db.Connector, writer config.Store) error {
 
 	err := dbConnector.Connect()
 	if err != nil {
