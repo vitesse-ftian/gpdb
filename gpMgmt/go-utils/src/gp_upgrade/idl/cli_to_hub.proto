@@ -37,6 +37,7 @@ message CheckConfigRequest {
 	int32 dbPort = 1;
 }
 
+// Consider removing the status as errors are/should be put on the error field.
 message CheckConfigReply {
     string configStatus  = 1;
 }
