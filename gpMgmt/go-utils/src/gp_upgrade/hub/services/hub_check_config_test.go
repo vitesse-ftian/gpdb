@@ -25,20 +25,30 @@ var _ = Describe("hub", func() {
 
 		var (
 			saveHomeDir string
+			dbConnector db.Connector
+			mock        sqlmock.Sqlmock
 		)
 
 		BeforeEach(func() {
+			// remove the homedir logic once we inject a fake writer everywhere
+			// will need to inject an arbitrary writer anyway for the different version file destination
 			saveHomeDir = testUtils.ResetTempHomeDir()
+
+			dbConnector, mock = db.CreateMockDBConn()
+			dbConnector.Connect()
 		})
 
 		AfterEach(func() {
 			os.Setenv("HOME", saveHomeDir)
+
+			dbConnector.Close()
+			// No controller test up into which to pull this assertion
+			// So maybe look into putting assertions like this into the integration tests, so protect against leaks?
+			Expect(dbConnector.GetConn().Stats().OpenConnections).To(Equal(0))
 		})
 
 		Describe("happy: the database is running, master-host is provided, and connection is successful", func() {
 			It("writes a file to ~/.gp_upgrade/cluster_config.json with correct json", func() {
-				dbConnector, mock := db.CreateMockDBConn()
-				dbConnector.Connect()
 				fakeQuery := "SELECT barCol FROM foo"
 				mock.ExpectQuery(fakeQuery).WillReturnRows(getHappyFakeRows())
 
@@ -46,10 +56,6 @@ var _ = Describe("hub", func() {
 
 				Expect(err).ToNot(HaveOccurred())
 
-				// No controller test up into which to pull this assertion
-				// So maybe look into putting assertions like this into the integration tests, so protect against leaks?
-				dbConnector.Close()
-				Expect(dbConnector.GetConn().Stats().OpenConnections).To(Equal(0))
 				content, err := ioutil.ReadFile(config.GetConfigFilePath())
 				testUtils.Check("cannot read file", err)
 
@@ -66,25 +72,16 @@ var _ = Describe("hub", func() {
 		Describe("errors", func() {
 			Describe("when the query fails", func() {
 				It("returns an error", func() {
-					dbConnector, mock := db.CreateMockDBConn()
 					fakeFailingQuery := "SEJECT % ofrm tabel1"
 					mock.ExpectQuery(fakeFailingQuery).WillReturnError(errors.New("the query has failed"))
-					dbConnector.Connect()
 
 					err := services.CreateConfigurationFile(dbConnector.GetConn(), fakeFailingQuery, config.NewWriter())
 					Expect(err).To(HaveOccurred())
-
-					// No controller test up into which to pull this assertion
-					// So maybe look into putting assertions like this into the integration tests, so protect against leaks?
-					dbConnector.Close()
-					Expect(dbConnector.GetConn().Stats().OpenConnections).To(Equal(0))
 				})
 			})
 
 			Describe("when the home directory is not writable", func() {
 				It("returns an error", func() {
-					dbConnector, mock := db.CreateMockDBConn()
-					dbConnector.Connect()
 					// focus on the write failing rather than querying
 					fineFakeQuery := "SELECT fooCol FROM bar"
 					mock.ExpectQuery(fineFakeQuery).WillReturnRows(getHappyFakeRows())
@@ -93,7 +90,6 @@ var _ = Describe("hub", func() {
 					testUtils.Check("cannot chmod: ", err)
 
 					err = services.CreateConfigurationFile(dbConnector.GetConn(), fineFakeQuery, config.NewWriter())
-					dbConnector.Close()
 					Expect(err).To(HaveOccurred())
 					Expect(err.Error()).To(ContainSubstring("open /tmp/gp_upgrade_test_temp_home_dir/.gp_upgrade/cluster_config.json: permission denied"))
 				})
@@ -101,8 +97,6 @@ var _ = Describe("hub", func() {
 
 			Describe("when the writer fails at parsing the db result", func() {
 				It("returns an error", func() {
-					dbConnector, mock := db.CreateMockDBConn()
-					dbConnector.Connect()
 					// focus on the writer failing rather than querying
 					fineFakeQuery := "SELECT fooCol FROM bar"
 					mock.ExpectQuery(fineFakeQuery).WillReturnRows(getHappyFakeRows())
