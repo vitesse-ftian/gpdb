@@ -38,10 +38,21 @@ var _ = Describe("hub", func() {
 		Describe("happy: the database is running, master-host is provided, and connection is successful", func() {
 			It("writes a file to ~/.gp_upgrade/cluster_config.json with correct json", func() {
 				dbConnector, mock := db.CreateMockDBConn()
-				setupSegmentConfigInDB(mock)
 				dbConnector.Connect()
+				fakeQuery := "SELECT barCol FROM foo"
 
-				err := services.CreateConfigurationFile(dbConnector.GetConn(), config.NewWriter())
+				header := []string{"dbid", "content", "role", "preferred_role", "mode", "status", "port",
+					"hostname", "address", "replication_port", "san_mounts",
+					"fsefsoid", "fsedbid", "fselocation"}
+				fakeConfigRow := []driver.Value{1, -1, 'p', 'p', 's', 'u', 15432, "office-5-231.pa.pivotal.io",
+					"office-5-231.pa.pivotal.io", nil, nil, nil, nil, nil}
+				fakeConfigRow2 := []driver.Value{2, 0, 'p', 'p', 's', 'u', 25432, "office-5-231.pa.pivotal.io",
+					"office-5-231.pa.pivotal.io", 25438, nil, nil, nil, nil}
+				rows := sqlmock.NewRows(header)
+				heapfakeResult := rows.AddRow(fakeConfigRow...).AddRow(fakeConfigRow2...)
+				mock.ExpectQuery(fakeQuery).WillReturnRows(heapfakeResult)
+
+				err := services.CreateConfigurationFile(dbConnector.GetConn(), fakeQuery, config.NewWriter())
 
 				Expect(err).ToNot(HaveOccurred())
 
@@ -61,14 +72,15 @@ var _ = Describe("hub", func() {
 		})
 
 		Describe("errors", func() {
-			Describe("when the query fails on AO table count", func() {
+			Describe("when the query fails", func() {
 
 				It("returns an error", func() {
 					dbConnector, mock := db.CreateMockDBConn()
-					mock.ExpectQuery(SELECT_SEGMENT_CONFIG_QUERY).WillReturnError(errors.New("the query has failed"))
+					fakeFailingQuery := "SEJECT % ofrm tabel1"
+					mock.ExpectQuery(fakeFailingQuery).WillReturnError(errors.New("the query has failed"))
 					dbConnector.Connect()
 
-					err := services.CreateConfigurationFile(dbConnector.GetConn(), config.NewWriter())
+					err := services.CreateConfigurationFile(dbConnector.GetConn(), fakeFailingQuery, config.NewWriter())
 					Expect(err).To(HaveOccurred())
 
 					// No controller test up into which to pull this assertion
@@ -80,28 +92,51 @@ var _ = Describe("hub", func() {
 			Describe("when the home directory is not writable", func() {
 				It("returns an error", func() {
 					dbConnector, mock := db.CreateMockDBConn()
-					setupSegmentConfigInDB(mock)
 					dbConnector.Connect()
+
+					// refactor: use same logic as happy path
+					minimalSucceedingFakeQuery := "SELECT fooCol FROM bar"
+					header := []string{"dbid", "content", "role", "preferred_role", "mode", "status", "port",
+						"hostname", "address", "replication_port", "san_mounts",
+						"fsefsoid", "fsedbid", "fselocation"}
+					fakeConfigRow := []driver.Value{1, -1, 'p', 'p', 's', 'u', 15432, "office-5-231.pa.pivotal.io",
+						"office-5-231.pa.pivotal.io", nil, nil, nil, nil, nil}
+					fakeConfigRow2 := []driver.Value{2, 0, 'p', 'p', 's', 'u', 25432, "office-5-231.pa.pivotal.io",
+						"office-5-231.pa.pivotal.io", 25438, nil, nil, nil, nil}
+					rows := sqlmock.NewRows(header)
+					heapfakeResult := rows.AddRow(fakeConfigRow...).AddRow(fakeConfigRow2...)
+					mock.ExpectQuery(minimalSucceedingFakeQuery).WillReturnRows(heapfakeResult)
+
 					err := os.MkdirAll(config.GetConfigDir(), 0500)
 					testUtils.Check("cannot chmod: ", err)
 
-					err = services.CreateConfigurationFile(dbConnector.GetConn(), config.NewWriter())
+					err = services.CreateConfigurationFile(dbConnector.GetConn(), minimalSucceedingFakeQuery, config.NewWriter())
 					dbConnector.Close()
 					Expect(err).To(HaveOccurred())
 					Expect(err.Error()).To(ContainSubstring("open /tmp/gp_upgrade_test_temp_home_dir/.gp_upgrade/cluster_config.json: permission denied"))
 				})
 			})
 
-			Describe("when db result cannot be parsed", func() {
+			Describe("when the writer fails at parsing the db result", func() {
 				It("returns an error", func() {
 
 					dbConnector, mock := db.CreateMockDBConn()
-					setupSegmentConfigInDB(mock)
-					mock.ExpectQuery(SELECT_SEGMENT_CONFIG_QUERY).WillReturnError(errors.New("the query has failed"))
 					dbConnector.Connect()
 					//MasterHost = "localhost"
 
-					err := services.CreateConfigurationFile(dbConnector.GetConn(), FailingWriter{})
+					fineFakeQuery := "SELECT fooCol FROM bar"
+					header := []string{"dbid", "content", "role", "preferred_role", "mode", "status", "port",
+						"hostname", "address", "replication_port", "san_mounts",
+						"fsefsoid", "fsedbid", "fselocation"}
+					fakeConfigRow := []driver.Value{1, -1, 'p', 'p', 's', 'u', 15432, "office-5-231.pa.pivotal.io",
+						"office-5-231.pa.pivotal.io", nil, nil, nil, nil, nil}
+					fakeConfigRow2 := []driver.Value{2, 0, 'p', 'p', 's', 'u', 25432, "office-5-231.pa.pivotal.io",
+						"office-5-231.pa.pivotal.io", 25438, nil, nil, nil, nil}
+					rows := sqlmock.NewRows(header)
+					arbitraryFakeResult := rows.AddRow(fakeConfigRow...).AddRow(fakeConfigRow2...)
+					mock.ExpectQuery(fineFakeQuery).WillReturnRows(arbitraryFakeResult)
+
+					err := services.CreateConfigurationFile(dbConnector.GetConn(), fineFakeQuery, FailingWriter{})
 
 					Expect(err).To(HaveOccurred())
 					Expect(err.Error()).To(ContainSubstring("I always fail"))
