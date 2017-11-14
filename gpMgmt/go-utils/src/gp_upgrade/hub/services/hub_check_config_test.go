@@ -17,7 +17,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/pkg/errors"
-	sqlmock "gopkg.in/DATA-DOG/go-sqlmock.v1"
+	"gopkg.in/DATA-DOG/go-sqlmock.v1"
 )
 
 var _ = Describe("hub", func() {
@@ -40,17 +40,7 @@ var _ = Describe("hub", func() {
 				dbConnector, mock := db.CreateMockDBConn()
 				dbConnector.Connect()
 				fakeQuery := "SELECT barCol FROM foo"
-
-				header := []string{"dbid", "content", "role", "preferred_role", "mode", "status", "port",
-					"hostname", "address", "replication_port", "san_mounts",
-					"fsefsoid", "fsedbid", "fselocation"}
-				fakeConfigRow := []driver.Value{1, -1, 'p', 'p', 's', 'u', 15432, "office-5-231.pa.pivotal.io",
-					"office-5-231.pa.pivotal.io", nil, nil, nil, nil, nil}
-				fakeConfigRow2 := []driver.Value{2, 0, 'p', 'p', 's', 'u', 25432, "office-5-231.pa.pivotal.io",
-					"office-5-231.pa.pivotal.io", 25438, nil, nil, nil, nil}
-				rows := sqlmock.NewRows(header)
-				heapfakeResult := rows.AddRow(fakeConfigRow...).AddRow(fakeConfigRow2...)
-				mock.ExpectQuery(fakeQuery).WillReturnRows(heapfakeResult)
+				mock.ExpectQuery(fakeQuery).WillReturnRows(getHappyFakeRows())
 
 				err := services.CreateConfigurationFile(dbConnector.GetConn(), fakeQuery, config.NewWriter())
 
@@ -65,15 +55,16 @@ var _ = Describe("hub", func() {
 
 				resultData := make([]map[string]interface{}, 0)
 				expectedData := make([]map[string]interface{}, 0)
-				json.Unmarshal(content, resultData)
-				json.Unmarshal([]byte(EXPECTED_CHECK_CONFIGURATION_OUTPUT), expectedData)
+				err = json.Unmarshal(content, &resultData)
+				Expect(err).ToNot(HaveOccurred())
+				err = json.Unmarshal([]byte(EXPECTED_CHECK_CONFIGURATION_OUTPUT), &expectedData)
+				Expect(err).ToNot(HaveOccurred())
 				Expect(expectedData).To(Equal(resultData))
 			})
 		})
 
 		Describe("errors", func() {
 			Describe("when the query fails", func() {
-
 				It("returns an error", func() {
 					dbConnector, mock := db.CreateMockDBConn()
 					fakeFailingQuery := "SEJECT % ofrm tabel1"
@@ -89,28 +80,19 @@ var _ = Describe("hub", func() {
 					Expect(dbConnector.GetConn().Stats().OpenConnections).To(Equal(0))
 				})
 			})
+
 			Describe("when the home directory is not writable", func() {
 				It("returns an error", func() {
 					dbConnector, mock := db.CreateMockDBConn()
 					dbConnector.Connect()
-
-					// refactor: use same logic as happy path
-					minimalSucceedingFakeQuery := "SELECT fooCol FROM bar"
-					header := []string{"dbid", "content", "role", "preferred_role", "mode", "status", "port",
-						"hostname", "address", "replication_port", "san_mounts",
-						"fsefsoid", "fsedbid", "fselocation"}
-					fakeConfigRow := []driver.Value{1, -1, 'p', 'p', 's', 'u', 15432, "office-5-231.pa.pivotal.io",
-						"office-5-231.pa.pivotal.io", nil, nil, nil, nil, nil}
-					fakeConfigRow2 := []driver.Value{2, 0, 'p', 'p', 's', 'u', 25432, "office-5-231.pa.pivotal.io",
-						"office-5-231.pa.pivotal.io", 25438, nil, nil, nil, nil}
-					rows := sqlmock.NewRows(header)
-					heapfakeResult := rows.AddRow(fakeConfigRow...).AddRow(fakeConfigRow2...)
-					mock.ExpectQuery(minimalSucceedingFakeQuery).WillReturnRows(heapfakeResult)
+					// focus on the write failing rather than querying
+					fineFakeQuery := "SELECT fooCol FROM bar"
+					mock.ExpectQuery(fineFakeQuery).WillReturnRows(getHappyFakeRows())
 
 					err := os.MkdirAll(config.GetConfigDir(), 0500)
 					testUtils.Check("cannot chmod: ", err)
 
-					err = services.CreateConfigurationFile(dbConnector.GetConn(), minimalSucceedingFakeQuery, config.NewWriter())
+					err = services.CreateConfigurationFile(dbConnector.GetConn(), fineFakeQuery, config.NewWriter())
 					dbConnector.Close()
 					Expect(err).To(HaveOccurred())
 					Expect(err.Error()).To(ContainSubstring("open /tmp/gp_upgrade_test_temp_home_dir/.gp_upgrade/cluster_config.json: permission denied"))
@@ -119,22 +101,11 @@ var _ = Describe("hub", func() {
 
 			Describe("when the writer fails at parsing the db result", func() {
 				It("returns an error", func() {
-
 					dbConnector, mock := db.CreateMockDBConn()
 					dbConnector.Connect()
-					//MasterHost = "localhost"
-
+					// focus on the writer failing rather than querying
 					fineFakeQuery := "SELECT fooCol FROM bar"
-					header := []string{"dbid", "content", "role", "preferred_role", "mode", "status", "port",
-						"hostname", "address", "replication_port", "san_mounts",
-						"fsefsoid", "fsedbid", "fselocation"}
-					fakeConfigRow := []driver.Value{1, -1, 'p', 'p', 's', 'u', 15432, "office-5-231.pa.pivotal.io",
-						"office-5-231.pa.pivotal.io", nil, nil, nil, nil, nil}
-					fakeConfigRow2 := []driver.Value{2, 0, 'p', 'p', 's', 'u', 25432, "office-5-231.pa.pivotal.io",
-						"office-5-231.pa.pivotal.io", 25438, nil, nil, nil, nil}
-					rows := sqlmock.NewRows(header)
-					arbitraryFakeResult := rows.AddRow(fakeConfigRow...).AddRow(fakeConfigRow2...)
-					mock.ExpectQuery(fineFakeQuery).WillReturnRows(arbitraryFakeResult)
+					mock.ExpectQuery(fineFakeQuery).WillReturnRows(getHappyFakeRows())
 
 					err := services.CreateConfigurationFile(dbConnector.GetConn(), fineFakeQuery, FailingWriter{})
 
@@ -156,29 +127,30 @@ func (FailingWriter) Write() error {
 	return errors.New("I always fail")
 }
 
-func setupSegmentConfigInDB(mock sqlmock.Sqlmock) {
+// Construct sqlmock in-memory rows to match EXPECTED_CHECK_CONFIGURATION_OUTPUT
+func getHappyFakeRows() *sqlmock.Rows {
 	header := []string{"dbid", "content", "role", "preferred_role", "mode", "status", "port",
 		"hostname", "address", "replication_port", "san_mounts",
 		"fsefsoid", "fsedbid", "fselocation"}
-	fakeConfigRow := []driver.Value{1, -1, 'p', 'p', 's', 'u', 15432, "office-5-231.pa.pivotal.io",
-		"office-5-231.pa.pivotal.io", nil, nil, nil, nil, nil}
-	fakeConfigRow2 := []driver.Value{2, 0, 'p', 'p', 's', 'u', 25432, "office-5-231.pa.pivotal.io",
-		"office-5-231.pa.pivotal.io", 25438, nil, nil, nil, nil}
+	fakeConfigRow := []driver.Value{1, -1, 'p', 'p', 's', 'u', 15432, "mdw.local",
+		"mdw.local", nil, nil, nil, nil, nil}
+	fakeConfigRow2 := []driver.Value{2, 0, 'p', 'p', 's', 'u', 25432, "sdw1.local",
+		"sdw1.local", 25438, nil, nil, nil, nil}
 	rows := sqlmock.NewRows(header)
 	heapfakeResult := rows.AddRow(fakeConfigRow...).AddRow(fakeConfigRow2...)
-	mock.ExpectQuery(SELECT_SEGMENT_CONFIG_QUERY).WillReturnRows(heapfakeResult)
+	return heapfakeResult
 }
 
 const (
 	EXPECTED_CHECK_CONFIGURATION_OUTPUT = `[
 	{
-	  "address": "office-5-231.pa.pivotal.io",
+	  "address": "mdw.local",
 	  "content": -1,
 	  "dbid": 1,
 	  "fsedbid": null,
 	  "fsefsoid": null,
 	  "fselocation": null,
-	  "hostname": "office-5-231.pa.pivotal.io",
+	  "hostname": "mdw.local",
 	  "mode": 115,
 	  "port": 15432,
 	  "preferred_role": 112,
@@ -188,13 +160,13 @@ const (
 	  "status": 117
 	},
 	{
-	  "address": "office-5-231.pa.pivotal.io",
+	  "address": "sdw1.local",
 	  "content": 0,
 	  "dbid": 2,
 	  "fsedbid": null,
 	  "fsefsoid": null,
 	  "fselocation": null,
-	  "hostname": "office-5-231.pa.pivotal.io",
+	  "hostname": "sdw1.local",
 	  "mode": 115,
 	  "port": 25432,
 	  "preferred_role": 112,
@@ -204,6 +176,4 @@ const (
 	  "status": 117
 	}
 	]`
-
-	SELECT_SEGMENT_CONFIG_QUERY = "select dbid, content.*"
 )
