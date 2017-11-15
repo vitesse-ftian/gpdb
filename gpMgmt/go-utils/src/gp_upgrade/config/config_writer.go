@@ -17,12 +17,14 @@ type Writer struct {
 	TableJSONData []map[string]interface{}
 	Formatter     Formatter
 	FileWriter    FileWriter
+	PathToFile    string
 }
 
-func NewWriter() *Writer {
+func NewWriter(PathToFile string) *Writer {
 	return &Writer{
 		Formatter:  NewJSONFormatter(),
 		FileWriter: NewRealFileWriter(),
+		PathToFile: PathToFile,
 	}
 }
 
@@ -47,7 +49,7 @@ func (configWriter *Writer) Write() error {
 	if err != nil {
 		return errors.New(err.Error())
 	}
-	f, err := os.Create(GetConfigFilePath())
+	f, err := os.Create(configWriter.PathToFile)
 	if err != nil {
 		return errors.New(err.Error())
 	}

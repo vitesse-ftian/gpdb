@@ -39,7 +39,7 @@ var _ = Describe("hub", func() {
 				fakeQuery := "SELECT barCol FROM foo"
 				mock.ExpectQuery(fakeQuery).WillReturnRows(getHappyFakeRows())
 				successfulWriter := SuccessfulWriter{}
-				err := services.CreateConfigurationFile(dbConnector.GetConn(), fakeQuery, &successfulWriter)
+				err := services.SaveQueryResultToJSON(dbConnector.GetConn(), fakeQuery, &successfulWriter)
 
 				Expect(err).ToNot(HaveOccurred())
 				Expect(successfulWriter.CallsToLoad).To(Equal(1))
@@ -53,7 +53,7 @@ var _ = Describe("hub", func() {
 					fakeFailingQuery := "SEJECT % ofrm tabel1"
 					mock.ExpectQuery(fakeFailingQuery).WillReturnError(errors.New("the query has failed"))
 
-					err := services.CreateConfigurationFile(dbConnector.GetConn(), fakeFailingQuery, &SuccessfulWriter{})
+					err := services.SaveQueryResultToJSON(dbConnector.GetConn(), fakeFailingQuery, &SuccessfulWriter{})
 					Expect(err).To(HaveOccurred())
 				})
 			})
@@ -64,7 +64,7 @@ var _ = Describe("hub", func() {
 					fineFakeQuery := "SELECT fooCol FROM bar"
 					mock.ExpectQuery(fineFakeQuery).WillReturnRows(getHappyFakeRows())
 
-					err := services.CreateConfigurationFile(dbConnector.GetConn(), fineFakeQuery, FailingWriter{})
+					err := services.SaveQueryResultToJSON(dbConnector.GetConn(), fineFakeQuery, FailingWriter{})
 
 					Expect(err).To(HaveOccurred())
 					Expect(err.Error()).To(ContainSubstring("I always fail"))

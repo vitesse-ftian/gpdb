@@ -21,7 +21,7 @@ var _ = Describe("configWriter", func() {
 
 	BeforeEach(func() {
 		saved_old_home = testUtils.ResetTempHomeDir()
-		subject = config.NewWriter()
+		subject = config.NewWriter("/tmp/doesnotexist")
 	})
 
 	AfterEach(func() {
@@ -63,7 +63,7 @@ var _ = Describe("configWriter", func() {
 					NumRows:          1,
 					SampleRowStrings: sample,
 				}
-				subject := config.NewWriter()
+				subject := config.NewWriter("/tmp/doesnotexist")
 				err := subject.Load(fakeRows)
 				Expect(err).To(HaveOccurred())
 			})
@@ -93,6 +93,7 @@ var _ = Describe("configWriter", func() {
 				TableJSONData: json_structure,
 				Formatter:     config.NewJSONFormatter(),
 				FileWriter:    config.NewRealFileWriter(),
+				PathToFile:    config.GetConfigFilePath(),
 			}
 			err := subject.Write()
 
@@ -123,6 +124,7 @@ var _ = Describe("configWriter", func() {
 				subject := config.Writer{
 					TableJSONData: json_structure,
 					Formatter:     config.NewJSONFormatter(),
+					PathToFile:    config.GetConfigFilePath(),
 				}
 				err = subject.Write()
 
