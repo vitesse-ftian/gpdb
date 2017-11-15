@@ -32,7 +32,7 @@ func (configWriter *Writer) Load(rows utils.RowsWrapper) error {
 	return err
 }
 
-func (configWriter Writer) Write() error {
+func (configWriter *Writer) Write() error {
 	jsonData, err := json.Marshal(configWriter.TableJSONData)
 	if err != nil {
 		return errors.New(err.Error())

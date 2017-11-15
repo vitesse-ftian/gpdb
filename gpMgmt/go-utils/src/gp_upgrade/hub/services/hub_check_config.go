@@ -52,5 +52,6 @@ func CreateConfigurationFile(databaseHandler *sqlx.DB, configQuery string, write
 	if err != nil {
 		return errors.New(err.Error())
 	}
+
 	return nil
 }
