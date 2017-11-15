@@ -4,14 +4,14 @@ import (
 	"context"
 	"fmt"
 
-	"gp_upgrade/config"
+	"gp_upgrade/hub/configutils"
 	pb "gp_upgrade/idl"
 	"io"
 )
 
 type Hub struct{}
 
-func (h Hub) CheckDiskUsage(clients []config.ClientAndHostname, writer io.Writer) {
+func (h Hub) CheckDiskUsage(clients []configutils.ClientAndHostname, writer io.Writer) {
 
 	//var diskUsageResults []string
 

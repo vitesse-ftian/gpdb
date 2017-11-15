@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"gp_upgrade/cli/commanders"
 	"gp_upgrade/commands"
-	"gp_upgrade/config"
+	"gp_upgrade/hub/configutils"
 	"log"
 	"os"
 	"runtime/debug"
@@ -127,7 +127,7 @@ func main() {
 		Long:    "check that disk space usage is less than 80% on all segments",
 		Aliases: []string{"du"},
 		Run: func(cmd *cobra.Command, args []string) {
-			clients := config.RPCClients{}.GetRPCClients()
+			clients := configutils.RPCClients{}.GetRPCClients()
 			hub := commands.Hub{}
 			hub.CheckDiskUsage(clients, os.Stdout)
 		},

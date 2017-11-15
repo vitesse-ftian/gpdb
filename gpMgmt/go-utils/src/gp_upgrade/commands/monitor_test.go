@@ -3,7 +3,7 @@ package commands
 import (
 	"os"
 
-	"gp_upgrade/config"
+	"gp_upgrade/hub/configutils"
 	"gp_upgrade/shellParsers"
 	"io/ioutil"
 
@@ -96,7 +96,7 @@ var _ = Describe("monitor", func() {
 
 	Describe("errors", func() {
 		It("returns an error when the configuration cannot be read", func() {
-			os.RemoveAll(config.GetConfigFilePath())
+			os.RemoveAll(configutils.GetConfigFilePath())
 
 			err := subject.execute(client, shellParser, testStdout)
 
@@ -104,7 +104,7 @@ var _ = Describe("monitor", func() {
 		})
 
 		It("returns an error when the configuration has no entry for the segment-id specified by user", func() {
-			ioutil.WriteFile(config.GetConfigFilePath(), []byte("[]"), 0600)
+			ioutil.WriteFile(configutils.GetConfigFilePath(), []byte("[]"), 0600)
 			err := subject.execute(client, shellParser, testStdout)
 
 			Expect(err).To(HaveOccurred())

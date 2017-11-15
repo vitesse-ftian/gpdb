@@ -7,7 +7,7 @@ import (
 
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
-	"gp_upgrade/config"
+	"gp_upgrade/hub/configutils"
 	pb "gp_upgrade/idl"
 	"gp_upgrade/shellParsers"
 
@@ -77,7 +77,7 @@ func (cmd MonitorCommand) execute(client pb.CommandListenerClient, shellParser s
 
 func readConfigForSegmentPort(segmentID int) (int, error) {
 	var err error
-	reader := config.Reader{}
+	reader := configutils.Reader{}
 	err = reader.Read()
 	if err != nil {
 		return -1, errors.New(err.Error())

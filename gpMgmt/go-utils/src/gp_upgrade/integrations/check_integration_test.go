@@ -7,7 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 
-	"gp_upgrade/config"
+	"gp_upgrade/hub/configutils"
 
 	"fmt"
 
@@ -50,10 +50,10 @@ var _ = Describe("check", func() {
 			Eventually(session).Should(Exit(0))
 			// check file
 
-			_, err := ioutil.ReadFile(config.GetConfigFilePath())
+			_, err := ioutil.ReadFile(configutils.GetConfigFilePath())
 			testUtils.Check("cannot read file", err)
 
-			reader := config.Reader{}
+			reader := configutils.Reader{}
 			err = reader.Read()
 			testUtils.Check("cannot read config", err)
 

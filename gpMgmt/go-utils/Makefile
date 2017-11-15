@@ -12,7 +12,7 @@ clean distclean:
 install:
 	$(MAKE) -C src/gp_upgrade $@
 
-# do nothing if global config is not enabled
+# do nothing if global configutils is not enabled
 else
 all:
 	@echo "Configuration not enabled for go-utils."

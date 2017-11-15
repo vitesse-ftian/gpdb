@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
-	"gp_upgrade/config"
+	"gp_upgrade/hub/configutils"
 	pb "gp_upgrade/idl"
 	mockpb "gp_upgrade/mock_idl"
 	"gp_upgrade/shellParsers"
@@ -59,7 +59,7 @@ var _ = Describe("disk_usage test", func() {
 				expectedFilesystemsUsageHost2 = append(expectedFilesystemsUsageHost1, &pb.FileSysUsage{Filesystem: "slightly different filesystem", Usage: 26.4})
 				expectedFilesystemsUsageHost2 = append(expectedFilesystemsUsageHost1, &pb.FileSysUsage{Filesystem: "/second/filesystem2", Usage: 31.4})
 
-				var clients []config.ClientAndHostname
+				var clients []configutils.ClientAndHostname
 				client1.EXPECT().CheckDiskUsage(
 					gomock.Any(),
 					&pb.CheckDiskUsageRequest{},
@@ -73,8 +73,8 @@ var _ = Describe("disk_usage test", func() {
 				hostname2 := "briar"
 
 				clients = append(clients,
-					config.ClientAndHostname{Client: client1, Hostname: hostname1},
-					config.ClientAndHostname{Client: client2, Hostname: hostname2})
+					configutils.ClientAndHostname{Client: client1, Hostname: hostname1},
+					configutils.ClientAndHostname{Client: client2, Hostname: hostname2})
 				buffer := gbytes.NewBuffer()
 				subject.CheckDiskUsage(clients, buffer)
 
@@ -93,7 +93,7 @@ var _ = Describe("disk_usage test", func() {
 				expectedFilesystemsUsageHost2 = append(expectedFilesystemsUsageHost1, &pb.FileSysUsage{Filesystem: "slightly different filesystem", Usage: 26.4})
 				expectedFilesystemsUsageHost2 = append(expectedFilesystemsUsageHost1, &pb.FileSysUsage{Filesystem: "/second/filesystem2", Usage: 31.4})
 
-				var clients []config.ClientAndHostname
+				var clients []configutils.ClientAndHostname
 				client1.EXPECT().CheckDiskUsage(
 					gomock.Any(),
 					&pb.CheckDiskUsageRequest{},
@@ -107,8 +107,8 @@ var _ = Describe("disk_usage test", func() {
 				hostname2 := "briar"
 
 				clients = append(clients,
-					config.ClientAndHostname{Client: client1, Hostname: hostname1},
-					config.ClientAndHostname{Client: client2, Hostname: hostname2})
+					configutils.ClientAndHostname{Client: client1, Hostname: hostname1},
+					configutils.ClientAndHostname{Client: client2, Hostname: hostname2})
 				buffer := gbytes.NewBuffer()
 				subject.CheckDiskUsage(clients, buffer)
 

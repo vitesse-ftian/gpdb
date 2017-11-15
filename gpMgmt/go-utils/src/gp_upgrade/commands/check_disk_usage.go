@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
-	"gp_upgrade/config"
+	"gp_upgrade/hub/configutils"
 	pb "gp_upgrade/idl"
 	"io"
 	"os"
@@ -18,7 +18,7 @@ func NewDiskUsageCommand() CheckDiskUsageCommand {
 
 func (cmd CheckDiskUsageCommand) Execute() {
 	fmt.Println("CheckDiskUsageCommand Execute")
-	reader := config.Reader{}
+	reader := configutils.Reader{}
 	hostnames := reader.GetHostnames()
 	var clients []pb.CommandListenerClient
 	for i := 0; i < len(hostnames); i++ {

@@ -1,8 +1,8 @@
 package services
 
 import (
-	"gp_upgrade/config"
 	"gp_upgrade/db"
+	"gp_upgrade/hub/configutils"
 	pb "gp_upgrade/idl"
 	"gp_upgrade/utils"
 
@@ -27,14 +27,14 @@ func (s *cliToHubListenerImpl) CheckConfig(ctx context.Context,
 		from gp_segment_configuration, pg_filespace_entry
 		where fsedbid = dbid`
 	err = SaveQueryResultToJSON(databaseHandler, configQuery,
-		config.NewWriter(config.GetConfigFilePath()))
+		configutils.NewWriter(configutils.GetConfigFilePath()))
 	if err != nil {
 		return nil, err
 	}
 
 	versionQuery := `show gp_server_version_num`
 	err = SaveQueryResultToJSON(databaseHandler, versionQuery,
-		config.NewWriter(config.GetVersionFilePath()))
+		configutils.NewWriter(configutils.GetVersionFilePath()))
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +44,7 @@ func (s *cliToHubListenerImpl) CheckConfig(ctx context.Context,
 }
 
 // public for testing purposes
-func SaveQueryResultToJSON(databaseHandler *sqlx.DB, configQuery string, writer config.Store) error {
+func SaveQueryResultToJSON(databaseHandler *sqlx.DB, configQuery string, writer configutils.Store) error {
 	rows, err := databaseHandler.Query(configQuery)
 
 	if err != nil {

@@ -14,7 +14,7 @@ import (
 	"github.com/onsi/gomega/gbytes"
 )
 
-var _ = Describe("check config", func() {
+var _ = Describe("check configutils", func() {
 
 	var (
 		client *mockpb.MockCliToHubClient

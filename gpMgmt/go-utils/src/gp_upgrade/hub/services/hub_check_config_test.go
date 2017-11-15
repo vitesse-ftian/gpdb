@@ -15,7 +15,7 @@ import (
 )
 
 var _ = Describe("hub", func() {
-	Describe("check config internals", func() {
+	Describe("check configutils internals", func() {
 
 		var (
 			dbConnector db.Connector

@@ -1,27 +1,27 @@
-package config_test
+package configutils_test
 
 import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"gp_upgrade/config"
 	"gp_upgrade/testUtils"
 	"io/ioutil"
 	"os"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"gp_upgrade/hub/configutils"
 )
 
 var _ = Describe("configWriter", func() {
 	var (
 		saved_old_home string
-		subject        *config.Writer
+		subject        *configutils.Writer
 	)
 
 	BeforeEach(func() {
 		saved_old_home = testUtils.ResetTempHomeDir()
-		subject = config.NewWriter("/tmp/doesnotexist")
+		subject = configutils.NewWriter("/tmp/doesnotexist")
 	})
 
 	AfterEach(func() {
@@ -63,7 +63,7 @@ var _ = Describe("configWriter", func() {
 					NumRows:          1,
 					SampleRowStrings: sample,
 				}
-				subject := config.NewWriter("/tmp/doesnotexist")
+				subject := configutils.NewWriter("/tmp/doesnotexist")
 				err := subject.Load(fakeRows)
 				Expect(err).To(HaveOccurred())
 			})
@@ -89,42 +89,42 @@ var _ = Describe("configWriter", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 		It("writes a configuration when given json", func() {
-			subject := config.Writer{
+			subject := configutils.Writer{
 				TableJSONData: json_structure,
-				Formatter:     config.NewJSONFormatter(),
-				FileWriter:    config.NewRealFileWriter(),
-				PathToFile:    config.GetConfigFilePath(),
+				Formatter:     configutils.NewJSONFormatter(),
+				FileWriter:    configutils.NewRealFileWriter(),
+				PathToFile:    configutils.GetConfigFilePath(),
 			}
 			err := subject.Write()
 
 			Expect(err).NotTo(HaveOccurred())
 
-			content, err := ioutil.ReadFile(config.GetConfigFilePath())
+			content, err := ioutil.ReadFile(configutils.GetConfigFilePath())
 			Expect(err).NotTo(HaveOccurred())
 			Expect(expected_json).To(Equal(string(content)))
 		})
 		Describe("error cases", func() {
 			It("returns an error when home directory is not writable", func() {
 				os.Chmod(testUtils.TempHomeDir, 0100)
-				subject := config.Writer{
+				subject := configutils.Writer{
 					TableJSONData: json_structure,
-					Formatter:     config.NewJSONFormatter(),
-					FileWriter:    config.NewRealFileWriter(),
+					Formatter:     configutils.NewJSONFormatter(),
+					FileWriter:    configutils.NewRealFileWriter(),
 				}
 				err := subject.Write()
 
 				Expect(err).To(HaveOccurred())
 				Expect(string(err.Error())).To(ContainSubstring(fmt.Sprintf("mkdir %v/.gp_upgrade: permission denied", testUtils.TempHomeDir)))
 			})
-			It("returns an error when cluster config.go file cannot be opened", func() {
+			It("returns an error when cluster configutils.go file cannot be opened", func() {
 				// pre-create the directory with 0100 perms
-				err := os.MkdirAll(config.GetConfigDir(), 0100)
+				err := os.MkdirAll(configutils.GetConfigDir(), 0100)
 				Expect(err).NotTo(HaveOccurred())
 
-				subject := config.Writer{
+				subject := configutils.Writer{
 					TableJSONData: json_structure,
-					Formatter:     config.NewJSONFormatter(),
-					PathToFile:    config.GetConfigFilePath(),
+					Formatter:     configutils.NewJSONFormatter(),
+					PathToFile:    configutils.GetConfigFilePath(),
 				}
 				err = subject.Write()
 
@@ -137,9 +137,9 @@ var _ = Describe("configWriter", func() {
 				malformed_json_structure := []map[string]interface{}{
 					0: myMap,
 				}
-				subject := config.Writer{
+				subject := configutils.Writer{
 					TableJSONData: malformed_json_structure,
-					Formatter:     config.NewJSONFormatter(),
+					Formatter:     configutils.NewJSONFormatter(),
 				}
 				err := subject.Write()
 
@@ -147,7 +147,7 @@ var _ = Describe("configWriter", func() {
 			})
 
 			It("returns an error when json pretty print fails", func() {
-				subject := config.Writer{
+				subject := configutils.Writer{
 					TableJSONData: json_structure,
 					Formatter:     &testUtils.ErrorFormatter{},
 				}
@@ -157,7 +157,7 @@ var _ = Describe("configWriter", func() {
 			})
 
 			It("returns an error when file writing fails", func() {
-				subject := config.Writer{
+				subject := configutils.Writer{
 					TableJSONData: json_structure,
 					Formatter:     &testUtils.NilFormatter{},
 					FileWriter:    &testUtils.ErrorFileWriterDuringWrite{},

@@ -1,17 +1,16 @@
-package config_test
+package configutils_test
 
 import (
 	"encoding/json"
 	"gp_upgrade/testUtils"
 	"os"
 
-	"gp_upgrade/config"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"gp_upgrade/hub/configutils"
 )
 
-var _ = Describe("config reader", func() {
+var _ = Describe("configutils reader", func() {
 
 	const (
 		// the output is pretty-printed, so match that format precisely
@@ -24,7 +23,7 @@ var _ = Describe("config reader", func() {
 
 	var (
 		saved_old_home string
-		subject        config.Reader
+		subject        configutils.Reader
 		json_structure []map[string]interface{}
 	)
 
@@ -32,7 +31,7 @@ var _ = Describe("config reader", func() {
 		saved_old_home = testUtils.ResetTempHomeDir()
 		err := json.Unmarshal([]byte(expected_json), &json_structure)
 		Expect(err).NotTo(HaveOccurred())
-		subject = config.Reader{}
+		subject = configutils.Reader{}
 	})
 
 	AfterEach(func() {
@@ -47,7 +46,7 @@ var _ = Describe("config reader", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(subject.GetPortForSegment(7)).ToNot(BeNil())
 		})
-		It("returns an error if config cannot be read", func() {
+		It("returns an error if configutils cannot be read", func() {
 			err := subject.Read()
 			Expect(err).To(HaveOccurred())
 		})
