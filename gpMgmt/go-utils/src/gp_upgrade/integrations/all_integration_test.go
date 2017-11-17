@@ -12,6 +12,6 @@ var _ = Describe("all", func() {
 		session := runCommand()
 
 		Eventually(session).Should(Exit(1))
-		Eventually(session.Err).Should(Say("Please specify one command of: prepare, check, monitor, or version"))
+		Eventually(session.Err).Should(Say("Please specify one command of: prepare, check, status or version"))
 	})
 })

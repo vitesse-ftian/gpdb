@@ -10,6 +10,12 @@ import (
 	"os"
 )
 
+const (
+	// todo generalize to any host
+	address = "localhost"
+	port    = "6416"
+)
+
 type CheckDiskUsageCommand struct{}
 
 func NewDiskUsageCommand() CheckDiskUsageCommand {
