@@ -5,6 +5,7 @@ package idl;
 service CliToHub {
     rpc StatusUpgrade(StatusUpgradeRequest) returns (StatusUpgradeReply) {}
     rpc CheckConfig(CheckConfigRequest) returns (CheckConfigReply) {}
+    rpc CheckObjectCount(CheckObjectCountRequest) returns (CheckObjectCountReply) {}
 }
 
 message StatusUpgradeRequest {}
@@ -40,4 +41,18 @@ message CheckConfigRequest {
 // Consider removing the status as errors are/should be put on the error field.
 message CheckConfigReply {
     string configStatus  = 1;
+}
+
+message CountPerDb {
+    string DbName = 1;
+    int32 AoCount = 2;
+    int32 HeapCount = 3;
+}
+message CheckObjectCountRequest {
+    int32 dbPort = 1;
+}
+
+// Consider removing the status as errors are/should be put on the error field.
+message CheckObjectCountReply {
+    repeated CountPerDb list_of_counts = 1;
 }

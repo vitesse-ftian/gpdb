@@ -71,6 +71,24 @@ func (mr *MockCliToHubClientMockRecorder) CheckConfig(ctx, in interface{}, opts 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckConfig", reflect.TypeOf((*MockCliToHubClient)(nil).CheckConfig), varargs...)
 }
 
+// CheckObjectCount mocks base method
+func (m *MockCliToHubClient) CheckObjectCount(ctx context.Context, in *CheckObjectCountRequest, opts ...grpc.CallOption) (*CheckObjectCountReply, error) {
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "CheckObjectCount", varargs...)
+	ret0, _ := ret[0].(*CheckObjectCountReply)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CheckObjectCount indicates an expected call of CheckObjectCount
+func (mr *MockCliToHubClientMockRecorder) CheckObjectCount(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckObjectCount", reflect.TypeOf((*MockCliToHubClient)(nil).CheckObjectCount), varargs...)
+}
+
 // MockCliToHubServer is a mock of CliToHubServer interface
 type MockCliToHubServer struct {
 	ctrl     *gomock.Controller
@@ -118,4 +136,17 @@ func (m *MockCliToHubServer) CheckConfig(arg0 context.Context, arg1 *CheckConfig
 // CheckConfig indicates an expected call of CheckConfig
 func (mr *MockCliToHubServerMockRecorder) CheckConfig(arg0, arg1 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckConfig", reflect.TypeOf((*MockCliToHubServer)(nil).CheckConfig), arg0, arg1)
+}
+
+// CheckObjectCount mocks base method
+func (m *MockCliToHubServer) CheckObjectCount(arg0 context.Context, arg1 *CheckObjectCountRequest) (*CheckObjectCountReply, error) {
+	ret := m.ctrl.Call(m, "CheckObjectCount", arg0, arg1)
+	ret0, _ := ret[0].(*CheckObjectCountReply)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CheckObjectCount indicates an expected call of CheckObjectCount
+func (mr *MockCliToHubServerMockRecorder) CheckObjectCount(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckObjectCount", reflect.TypeOf((*MockCliToHubServer)(nil).CheckObjectCount), arg0, arg1)
 }

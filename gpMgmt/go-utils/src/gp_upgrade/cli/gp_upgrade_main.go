@@ -116,8 +116,17 @@ func main() {
 		Long:    "count database objects and numeric objects",
 		Aliases: []string{"oc"},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ocCommand := commands.NewObjectCountCommand(masterHost, dbPort, commands.RealDbConnectionFactory{})
-			return ocCommand.Execute(args)
+			conn, connConfigErr := grpc.Dial("localhost:"+hubPort,
+				grpc.WithInsecure())
+			if connConfigErr != nil {
+				fmt.Println(connConfigErr)
+				os.Exit(1)
+			}
+			client := pb.NewCliToHubClient(conn)
+			commanders.NewObjectCountChecker(client).Execute(dbPort)
+			//ocCommand := commands.NewObjectCountCommand(masterHost, dbPort, commands.RealDbConnectionFactory{})
+			//return ocCommand.Execute(args)
+			return nil
 		},
 	}
 
