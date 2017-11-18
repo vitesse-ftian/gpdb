@@ -6,6 +6,7 @@ service CliToHub {
     rpc StatusUpgrade(StatusUpgradeRequest) returns (StatusUpgradeReply) {}
     rpc CheckConfig(CheckConfigRequest) returns (CheckConfigReply) {}
     rpc CheckObjectCount(CheckObjectCountRequest) returns (CheckObjectCountReply) {}
+    rpc CheckVersion(CheckVersionRequest) returns (CheckVersionReply) {}
 }
 
 message StatusUpgradeRequest {}
@@ -49,10 +50,18 @@ message CountPerDb {
     int32 HeapCount = 3;
 }
 message CheckObjectCountRequest {
-    int32 dbPort = 1;
+    int32 DbPort = 1;
 }
 
-// Consider removing the status as errors are/should be put on the error field.
 message CheckObjectCountReply {
     repeated CountPerDb list_of_counts = 1;
+}
+
+message CheckVersionRequest {
+    int32 DbPort = 1;
+    string Host = 2;
+}
+
+message CheckVersionReply {
+    bool IsVersionCompatible = 1;
 }

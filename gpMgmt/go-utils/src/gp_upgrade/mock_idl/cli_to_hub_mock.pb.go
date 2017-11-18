@@ -89,6 +89,24 @@ func (mr *MockCliToHubClientMockRecorder) CheckObjectCount(ctx, in interface{}, 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckObjectCount", reflect.TypeOf((*MockCliToHubClient)(nil).CheckObjectCount), varargs...)
 }
 
+// CheckVersion mocks base method
+func (m *MockCliToHubClient) CheckVersion(ctx context.Context, in *CheckVersionRequest, opts ...grpc.CallOption) (*CheckVersionReply, error) {
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "CheckVersion", varargs...)
+	ret0, _ := ret[0].(*CheckVersionReply)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CheckVersion indicates an expected call of CheckVersion
+func (mr *MockCliToHubClientMockRecorder) CheckVersion(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckVersion", reflect.TypeOf((*MockCliToHubClient)(nil).CheckVersion), varargs...)
+}
+
 // MockCliToHubServer is a mock of CliToHubServer interface
 type MockCliToHubServer struct {
 	ctrl     *gomock.Controller
@@ -149,4 +167,17 @@ func (m *MockCliToHubServer) CheckObjectCount(arg0 context.Context, arg1 *CheckO
 // CheckObjectCount indicates an expected call of CheckObjectCount
 func (mr *MockCliToHubServerMockRecorder) CheckObjectCount(arg0, arg1 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckObjectCount", reflect.TypeOf((*MockCliToHubServer)(nil).CheckObjectCount), arg0, arg1)
+}
+
+// CheckVersion mocks base method
+func (m *MockCliToHubServer) CheckVersion(arg0 context.Context, arg1 *CheckVersionRequest) (*CheckVersionReply, error) {
+	ret := m.ctrl.Call(m, "CheckVersion", arg0, arg1)
+	ret0, _ := ret[0].(*CheckVersionReply)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CheckVersion indicates an expected call of CheckVersion
+func (mr *MockCliToHubServerMockRecorder) CheckVersion(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckVersion", reflect.TypeOf((*MockCliToHubServer)(nil).CheckVersion), arg0, arg1)
 }

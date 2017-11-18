@@ -98,10 +98,15 @@ func main() {
 		Long:    `validate current version is upgradable`,
 		Aliases: []string{"ver"},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return commands.CheckVersionCommand{
-				MasterHost: masterHost,
-				MasterPort: int(dbPort),
-			}.Execute(args)
+			conn, connConfigErr := grpc.Dial("localhost:"+hubPort,
+				grpc.WithInsecure())
+			if connConfigErr != nil {
+				fmt.Println(connConfigErr)
+				os.Exit(1)
+			}
+			client := pb.NewCliToHubClient(conn)
+			err := commanders.NewVersionChecker(client).Execute(masterHost, dbPort)
+			return err
 		},
 	}
 
