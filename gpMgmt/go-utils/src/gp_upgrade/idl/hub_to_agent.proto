@@ -3,8 +3,8 @@ syntax = "proto3";
 package idl;
 
 service CommandListener {
-    rpc CheckUpgradeStatus(CheckUpgradeStatusRequest) returns (CheckUpgradeStatusReply) {}
-    rpc CheckDiskUsage(CheckDiskUsageRequest) returns (CheckDiskUsageReply) {}
+    rpc CheckUpgradeStatus (CheckUpgradeStatusRequest) returns (CheckUpgradeStatusReply) {}
+    rpc CheckDiskUsageOnAgents (CheckDiskUsageRequestToAgent) returns (CheckDiskUsageReplyFromAgent) {}
 }
 
 message CheckUpgradeStatusRequest {}
@@ -18,8 +18,8 @@ message FileSysUsage {
     double usage = 2;
 }
 
-message CheckDiskUsageRequest {}
+message CheckDiskUsageRequestToAgent {}
 
-message CheckDiskUsageReply {
+message CheckDiskUsageReplyFromAgent {
     repeated FileSysUsage list_of_file_sys_usage = 1;
 }

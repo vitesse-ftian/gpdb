@@ -16,7 +16,7 @@ func (h Hub) CheckDiskUsage(clients []configutils.ClientAndHostname, writer io.W
 	//var diskUsageResults []string
 
 	for i := 0; i < len(clients); i++ {
-		reply, err := clients[i].Client.CheckDiskUsage(context.Background(), &pb.CheckDiskUsageRequest{})
+		reply, err := clients[i].Client.CheckDiskUsageOnAgents(context.Background(), &pb.CheckDiskUsageRequestToAgent{})
 		if err != nil {
 			fmt.Fprint(writer, fmt.Sprintf("diskspace check - WARNING - unable to connect to %s\n", clients[i].Hostname))
 		} else {

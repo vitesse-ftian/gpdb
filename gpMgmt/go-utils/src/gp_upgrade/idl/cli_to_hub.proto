@@ -7,6 +7,7 @@ service CliToHub {
     rpc CheckConfig(CheckConfigRequest) returns (CheckConfigReply) {}
     rpc CheckObjectCount(CheckObjectCountRequest) returns (CheckObjectCountReply) {}
     rpc CheckVersion(CheckVersionRequest) returns (CheckVersionReply) {}
+    rpc CheckDiskUsage(CheckDiskUsageRequest) returns (CheckDiskUsageReply) {}
 }
 
 message StatusUpgradeRequest {}
@@ -64,4 +65,10 @@ message CheckVersionRequest {
 
 message CheckVersionReply {
     bool IsVersionCompatible = 1;
+}
+
+message CheckDiskUsageRequest {}
+
+message CheckDiskUsageReply {
+    repeated string SegmentFileSysUsage = 1;
 }

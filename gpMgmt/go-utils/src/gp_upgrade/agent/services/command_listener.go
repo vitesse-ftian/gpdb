@@ -27,7 +27,7 @@ func (s *commandListenerImpl) CheckUpgradeStatus(ctx context.Context, in *pb.Che
 	return &pb.CheckUpgradeStatusReply{ProcessList: string(output)}, nil
 }
 
-func (s *commandListenerImpl) CheckDiskUsage(ctx context.Context, in *pb.CheckDiskUsageRequest) (*pb.CheckDiskUsageReply, error) {
+func (s *commandListenerImpl) CheckDiskUsageOnAgents(ctx context.Context, in *pb.CheckDiskUsageRequestToAgent) (*pb.CheckDiskUsageReplyFromAgent, error) {
 	diskUsage, err := s.getDiskUsage()
 	if err != nil {
 		return nil, err
@@ -36,7 +36,7 @@ func (s *commandListenerImpl) CheckDiskUsage(ctx context.Context, in *pb.CheckDi
 	for k, v := range diskUsage {
 		listDiskUsages = append(listDiskUsages, &pb.FileSysUsage{Filesystem: k, Usage: v})
 	}
-	return &pb.CheckDiskUsageReply{ListOfFileSysUsage: listDiskUsages}, nil
+	return &pb.CheckDiskUsageReplyFromAgent{ListOfFileSysUsage: listDiskUsages}, nil
 }
 
 // diskUsage() wraps a pair of calls to the gosigar library.

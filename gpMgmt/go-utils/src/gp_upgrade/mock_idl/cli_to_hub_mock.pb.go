@@ -107,6 +107,24 @@ func (mr *MockCliToHubClientMockRecorder) CheckVersion(ctx, in interface{}, opts
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckVersion", reflect.TypeOf((*MockCliToHubClient)(nil).CheckVersion), varargs...)
 }
 
+// CheckDiskUsage mocks base method
+func (m *MockCliToHubClient) CheckDiskUsage(ctx context.Context, in *CheckDiskUsageRequest, opts ...grpc.CallOption) (*CheckDiskUsageReply, error) {
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "CheckDiskUsage", varargs...)
+	ret0, _ := ret[0].(*CheckDiskUsageReply)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CheckDiskUsage indicates an expected call of CheckDiskUsage
+func (mr *MockCliToHubClientMockRecorder) CheckDiskUsage(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckDiskUsage", reflect.TypeOf((*MockCliToHubClient)(nil).CheckDiskUsage), varargs...)
+}
+
 // MockCliToHubServer is a mock of CliToHubServer interface
 type MockCliToHubServer struct {
 	ctrl     *gomock.Controller
@@ -180,4 +198,17 @@ func (m *MockCliToHubServer) CheckVersion(arg0 context.Context, arg1 *CheckVersi
 // CheckVersion indicates an expected call of CheckVersion
 func (mr *MockCliToHubServerMockRecorder) CheckVersion(arg0, arg1 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckVersion", reflect.TypeOf((*MockCliToHubServer)(nil).CheckVersion), arg0, arg1)
+}
+
+// CheckDiskUsage mocks base method
+func (m *MockCliToHubServer) CheckDiskUsage(arg0 context.Context, arg1 *CheckDiskUsageRequest) (*CheckDiskUsageReply, error) {
+	ret := m.ctrl.Call(m, "CheckDiskUsage", arg0, arg1)
+	ret0, _ := ret[0].(*CheckDiskUsageReply)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CheckDiskUsage indicates an expected call of CheckDiskUsage
+func (mr *MockCliToHubServerMockRecorder) CheckDiskUsage(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckDiskUsage", reflect.TypeOf((*MockCliToHubServer)(nil).CheckDiskUsage), arg0, arg1)
 }

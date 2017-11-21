@@ -49,7 +49,7 @@ var _ = Describe("CommandListener", func() {
 			}
 			listener := &commandListenerImpl{getDiskUsage}
 
-			resp, err := listener.CheckDiskUsage(nil, &pb.CheckDiskUsageRequest{})
+			resp, err := listener.CheckDiskUsageOnAgents(nil, &pb.CheckDiskUsageRequestToAgent{})
 			Expect(err).To(BeNil())
 			for _, val := range resp.ListOfFileSysUsage {
 				if val.Filesystem == "/data" {
@@ -65,7 +65,7 @@ var _ = Describe("CommandListener", func() {
 				return nil, errors.New("fake error")
 			}
 			listener := &commandListenerImpl{getDiskUsage}
-			_, err := listener.CheckDiskUsage(nil, &pb.CheckDiskUsageRequest{})
+			_, err := listener.CheckDiskUsageOnAgents(nil, &pb.CheckDiskUsageRequestToAgent{})
 			Expect(err).To(HaveOccurred())
 		})
 	})
