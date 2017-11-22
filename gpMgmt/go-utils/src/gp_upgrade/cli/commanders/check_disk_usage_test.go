@@ -42,7 +42,7 @@ var _ = Describe("object count tests", func() {
 			err := request.Execute(9999)
 
 			Expect(err).ToNot(BeNil())
-			Expect(string(testLogFile.Contents())).To(ContainSubstring("ERROR - Unable to connect to hub"))
+			Expect(string(testLogFile.Contents())).To(ContainSubstring("ERROR - gRPC call to hub failed"))
 		})
 		It("prints out the results of disk usage check from gRPC reply", func() {
 			_, testStdout, _, _ := testutils.SetupTestLogger()

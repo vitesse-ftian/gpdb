@@ -19,7 +19,7 @@ func (req DiskUsageChecker) Execute(dbPort int) error {
 	reply, err := req.client.CheckDiskUsage(context.Background(),
 		&pb.CheckDiskUsageRequest{})
 	if err != nil {
-		logger.Error("ERROR - Unable to connect to hub")
+		logger.Error("ERROR - gRPC call to hub failed")
 		return err
 	}
 

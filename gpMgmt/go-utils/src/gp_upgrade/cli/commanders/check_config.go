@@ -22,7 +22,7 @@ func (req ConfigChecker) Execute(dbPort int) error {
 	_, err := req.client.CheckConfig(context.Background(),
 		&pb.CheckConfigRequest{DbPort: int32(dbPort)})
 	if err != nil {
-		logger.Error("ERROR - Unable to connect to hub")
+		logger.Error("ERROR - gRPC call to hub failed")
 		return err
 	}
 	logger.Info("Check config request is processed.")

@@ -68,8 +68,12 @@ func ResetTempHomeDir() string {
 }
 
 func WriteSampleConfig() {
+	WriteProvidedConfig(SAMPLE_JSON)
+}
+
+func WriteProvidedConfig(jsonConfig string) {
 	err := os.MkdirAll(configutils.GetConfigDir(), 0700)
 	Check("cannot create sample dir", err)
-	err = ioutil.WriteFile(configutils.GetConfigFilePath(), []byte(SAMPLE_JSON), 0600)
+	err = ioutil.WriteFile(configutils.GetConfigFilePath(), []byte(jsonConfig), 0600)
 	Check("cannot write sample configutils", err)
 }

@@ -8,6 +8,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"gp_upgrade/hub/configutils"
+	"regexp"
 )
 
 var _ = Describe("configutils reader", func() {
@@ -56,6 +57,15 @@ var _ = Describe("configutils reader", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(subject.GetHostnames()).Should(ContainElement("briarwood"))
 			Expect(subject.GetHostnames()).Should(ContainElement("aspen.pivotal"))
+		})
+		It("returns list of hostnames without duplicates", func() {
+			re := regexp.MustCompile("aspen.pivotal")
+			configWithDupe := re.ReplaceAllLiteralString(testUtils.SAMPLE_JSON, "briarwood")
+			testUtils.WriteProvidedConfig(configWithDupe)
+			err := subject.Read()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(len(subject.GetHostnames())).Should(Equal(1))
+			Expect(subject.GetHostnames()).Should(ContainElement("briarwood"))
 		})
 	})
 })

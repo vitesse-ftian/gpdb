@@ -59,7 +59,7 @@ var _ = Describe("check configutils", func() {
 			request := commanders.NewConfigChecker(client)
 			err := request.Execute(9999)
 			Expect(err).ToNot(BeNil())
-			Eventually(testStderr).Should(gbytes.Say("ERROR - Unable to connect to hub"))
+			Eventually(testStderr).Should(gbytes.Say("ERROR - gRPC call to hub failed"))
 
 		})
 	})

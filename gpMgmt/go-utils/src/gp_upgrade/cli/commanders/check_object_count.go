@@ -19,7 +19,7 @@ func (req ObjectCountChecker) Execute(dbPort int) error {
 	reply, err := req.client.CheckObjectCount(context.Background(),
 		&pb.CheckObjectCountRequest{DbPort: int32(dbPort)})
 	if err != nil {
-		logger.Error("ERROR - Unable to connect to hub")
+		logger.Error("ERROR - gRPC call to hub failed")
 		return err
 	}
 	//TODO: do we want to report results to the user earlier? Should we make a gRPC call per db?

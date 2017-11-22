@@ -22,7 +22,7 @@ func (req VersionChecker) Execute(masterHost string, dbPort int) error {
 	resp, err := req.client.CheckVersion(context.Background(),
 		&pb.CheckVersionRequest{Host: masterHost, DbPort: int32(dbPort)})
 	if err != nil {
-		logger.Error("ERROR - Unable to connect to hub")
+		logger.Error("ERROR - gRPC call to hub failed")
 		return err
 	}
 	if resp.IsVersionCompatible {

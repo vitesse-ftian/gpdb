@@ -40,9 +40,16 @@ func (reader Reader) GetHostnames() []string {
 	if len(reader.config) == 0 {
 		reader.Read()
 	}
-	var hostnames []string
+	hostnamesSeen := make(map[string]bool)
 	for i := 0; i < len(reader.config); i++ {
-		hostnames = append(hostnames, reader.config[i].Hostname)
+		_, contained := hostnamesSeen[reader.config[i].Hostname]
+		if !contained {
+			hostnamesSeen[reader.config[i].Hostname] = true
+		}
+	}
+	var hostnames []string
+	for k := range hostnamesSeen {
+		hostnames = append(hostnames, k)
 	}
 	return hostnames
 }

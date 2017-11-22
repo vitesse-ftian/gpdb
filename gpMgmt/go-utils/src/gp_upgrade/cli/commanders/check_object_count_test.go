@@ -69,7 +69,7 @@ var _ = Describe("object count tests", func() {
 			request := commanders.NewObjectCountChecker(client)
 			err := request.Execute(9999)
 			Expect(err).ToNot(BeNil())
-			Eventually(testStderr).Should(gbytes.Say("ERROR - Unable to connect to hub"))
+			Eventually(testStderr).Should(gbytes.Say("ERROR - gRPC call to hub failed"))
 
 		})
 	})

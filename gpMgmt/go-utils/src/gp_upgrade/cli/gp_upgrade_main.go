@@ -103,8 +103,7 @@ func main() {
 				os.Exit(1)
 			}
 			client := pb.NewCliToHubClient(conn)
-			err := commanders.NewVersionChecker(client).Execute(masterHost, dbPort)
-			return err
+			return commanders.NewVersionChecker(client).Execute(masterHost, dbPort)
 		},
 	}
 
@@ -121,10 +120,7 @@ func main() {
 				os.Exit(1)
 			}
 			client := pb.NewCliToHubClient(conn)
-			commanders.NewObjectCountChecker(client).Execute(dbPort)
-			//ocCommand := commands.NewObjectCountCommand(masterHost, dbPort, commands.RealDbConnectionFactory{})
-			//return ocCommand.Execute(args)
-			return nil
+			return commanders.NewObjectCountChecker(client).Execute(dbPort)
 		},
 	}
 
@@ -133,7 +129,7 @@ func main() {
 		Short:   "check that disk space usage is less than 80% on all segments",
 		Long:    "check that disk space usage is less than 80% on all segments",
 		Aliases: []string{"du"},
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			conn, connConfigErr := grpc.Dial("localhost:"+hubPort,
 				grpc.WithInsecure())
 			if connConfigErr != nil {
@@ -141,7 +137,7 @@ func main() {
 				os.Exit(1)
 			}
 			client := pb.NewCliToHubClient(conn)
-			commanders.NewDiskUsageChecker(client).Execute(dbPort)
+			return commanders.NewDiskUsageChecker(client).Execute(dbPort)
 		},
 	}
 

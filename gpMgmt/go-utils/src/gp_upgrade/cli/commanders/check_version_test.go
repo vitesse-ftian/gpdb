@@ -64,7 +64,7 @@ var _ bool = Describe("object count tests", func() {
 			err := request.Execute("localhost", 9999)
 			Expect(err).ToNot(BeNil())
 			Expect(err.Error()).Should(ContainSubstring("something went wrong"))
-			Eventually(string(testStderr.Contents())).Should(ContainSubstring("ERROR - Unable to connect to hub"))
+			Eventually(string(testStderr.Contents())).Should(ContainSubstring("ERROR - gRPC call to hub failed"))
 		})
 	})
 })
