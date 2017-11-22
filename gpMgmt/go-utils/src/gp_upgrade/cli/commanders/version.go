@@ -1,8 +1,4 @@
-package commands
-
-import (
-	"fmt"
-)
+package commanders
 
 // This global var GpdbVersion should have a value set at build time.
 // see Makefile for -ldflags "-X etc"
@@ -12,12 +8,7 @@ type VersionCommand struct{}
 
 const DefaultGpdbVersion = "gp_upgrade unknown version"
 
-func (cmd VersionCommand) Execute([]string) error {
-	fmt.Println(versionString())
-	return nil
-}
-
-func versionString() string {
+func VersionString() string {
 	if GpdbVersion == "" {
 		return DefaultGpdbVersion
 	}

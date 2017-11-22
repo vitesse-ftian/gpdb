@@ -65,9 +65,9 @@ protobuf :
 		mockgen -source idl/hub_to_agent.pb.go -imports ".=gp_upgrade/idl" > mock_idl/hub_to_agent_mock.pb.go
 
 build :
-		$(TARGET_PLATFORM) go build -ldflags "-X gp_upgrade/commands.GpdbVersion=$(GPDB_VERSION)" -o $(GO_UTILS_DIR)/bin/$(MODULE_NAME)$(PLATFORM_POSTFIX) $(MODULE_NAME)/cli
-		$(TARGET_PLATFORM) go build -ldflags "-X gp_upgrade/commands.GpdbVersion=$(GPDB_VERSION)" -o $(GO_UTILS_DIR)/bin/gp_upgrade_agent$(PLATFORM_POSTFIX) $(MODULE_NAME)/agent
-		$(TARGET_PLATFORM) go build -ldflags "-X gp_upgrade/commands.GpdbVersion=$(GPDB_VERSION)" -o $(GO_UTILS_DIR)/bin/gp_upgrade_hub$(PLATFORM_POSTFIX) $(MODULE_NAME)/hub
+		$(TARGET_PLATFORM) go build -ldflags "-X gp_upgrade/cli/commanders.GpdbVersion=$(GPDB_VERSION)" -o $(GO_UTILS_DIR)/bin/$(MODULE_NAME)$(PLATFORM_POSTFIX) $(MODULE_NAME)/cli
+		$(TARGET_PLATFORM) go build -ldflags "-X gp_upgrade/cli/commanders.GpdbVersion=$(GPDB_VERSION)" -o $(GO_UTILS_DIR)/bin/gp_upgrade_agent$(PLATFORM_POSTFIX) $(MODULE_NAME)/agent
+		$(TARGET_PLATFORM) go build -ldflags "-X gp_upgrade/cli/commanders.GpdbVersion=$(GPDB_VERSION)" -o $(GO_UTILS_DIR)/bin/gp_upgrade_hub$(PLATFORM_POSTFIX) $(MODULE_NAME)/hub
 
 coverage: build
 		./scripts/run_coverage.sh

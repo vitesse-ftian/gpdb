@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"gp_upgrade/cli/commanders"
-	"gp_upgrade/commands"
 	"log"
 	"os"
 	"runtime/debug"
@@ -171,7 +170,7 @@ func main() {
 		Short: "Version of gp_upgrade",
 		Long:  `Version of gp_upgrade`,
 		Run: func(cmd *cobra.Command, args []string) {
-			commands.VersionCommand{}.Execute(args)
+			fmt.Println(commanders.VersionString())
 		},
 	}
 

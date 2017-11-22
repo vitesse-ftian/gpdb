@@ -14,7 +14,7 @@ import (
 var _ = Describe("version command", func() {
 	It("reports the version that's injected at build-time", func() {
 		fake_version := fmt.Sprintf("v0.0.0-dev.%d", time.Now().Unix())
-		commandPathWithVersion, err := Build("gp_upgrade/cli", "-ldflags", "-X gp_upgrade/commands.GpdbVersion="+fake_version)
+		commandPathWithVersion, err := Build("gp_upgrade/cli", "-ldflags", "-X gp_upgrade/cli/commanders.GpdbVersion="+fake_version)
 		Expect(err).NotTo(HaveOccurred())
 
 		// can't use the runCommand() integration helper function because we calculated a separate path
