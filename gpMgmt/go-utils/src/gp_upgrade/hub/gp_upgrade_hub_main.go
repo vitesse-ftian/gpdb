@@ -9,7 +9,11 @@ import (
 
 	pb "gp_upgrade/idl"
 
+	"fmt"
 	gpbackupUtils "github.com/greenplum-db/gpbackup/utils"
+	"github.com/spf13/cobra"
+	"os"
+	"runtime/debug"
 )
 
 const (
@@ -20,33 +24,50 @@ const (
 // Minimal CLI command parsing to embrace that booting this binary to run the hub might have some flags like a log dir
 
 func main() {
-	gpbackupUtils.InitializeLogging("hub", "")
-	logger := gpbackupUtils.GetLogger()
-	errorChannel := make(chan error)
-	defer close(errorChannel)
-	lis, err := net.Listen("tcp", cliToHubPort)
-	if err != nil {
-		logger.Fatal(err, "failed to listen")
+	var logdir string
+	var RootCmd = &cobra.Command{
+		Use:   "gp_upgrade_hub [--log-directory path]",
+		Short: "Start the gp_upgrade_hub (blocks)",
+		Long:  `Start the gp_upgrade_hub (blocks)`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			debug.SetTraceback("all")
+			gpbackupUtils.InitializeLogging("gp_upgrade_hub", logdir)
+			logger := gpbackupUtils.GetLogger()
+			errorChannel := make(chan error)
+			defer close(errorChannel)
+			lis, err := net.Listen("tcp", cliToHubPort)
+			if err != nil {
+				logger.Fatal(err, "failed to listen")
+			}
+
+			server := grpc.NewServer()
+			myImpl := services.NewCliToHubListener()
+			pb.RegisterCliToHubServer(server, myImpl)
+			reflection.Register(server)
+			go func(myListener net.Listener) {
+				if err := server.Serve(myListener); err != nil {
+					logger.Fatal(err, "failed to serve", err)
+					errorChannel <- err
+				}
+
+				close(errorChannel)
+			}(lis)
+
+			select {
+			case err := <-errorChannel:
+				if err != nil {
+					logger.Fatal(err, "error during Listening")
+				}
+			}
+			return nil
+		},
 	}
 
-	server := grpc.NewServer()
-	myImpl := services.NewCliToHubListener()
-	pb.RegisterCliToHubServer(server, myImpl)
-	reflection.Register(server)
-	go func(myListener net.Listener) {
-		if err := server.Serve(myListener); err != nil {
-			logger.Fatal(err, "failed to serve", err)
-			errorChannel <- err
-		}
+	RootCmd.PersistentFlags().StringVar(&logdir, "log-directory", "", "gp_upgrade_hub log directory")
 
-		close(errorChannel)
-	}(lis)
-
-	select {
-	case err := <-errorChannel:
-		if err != nil {
-			logger.Fatal(err, "error during Listening")
-		}
+	if err := RootCmd.Execute(); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
 	}
 
 }

@@ -16,7 +16,8 @@ var _ = Describe("integration tests running on master only", func() {
 	Describe("gp_upgrade prepare", func() {
 		Describe("start-hub", func() {
 			AfterEach(func() {
-				pkillCmd := exec.Command("pkill", "gp_upgrade_hub")
+				//pkill gp_upgrade_ will kill both gp_upgrade_hub and gp_upgrade_agent
+				pkillCmd := exec.Command("pkill", "gp_upgrade_")
 				pkillCmd.Run()
 			})
 

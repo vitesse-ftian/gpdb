@@ -3,8 +3,10 @@ package services_test
 import (
 	"database/sql/driver"
 	"errors"
+	"github.com/greenplum-db/gpbackup/testutils"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gbytes"
 	"gopkg.in/DATA-DOG/go-sqlmock.v1"
 	"gp_upgrade/db"
 	"gp_upgrade/hub/services"
@@ -14,11 +16,13 @@ var _ bool = Describe("hub", func() {
 	var (
 		dbConnector db.Connector
 		mock        sqlmock.Sqlmock
+		testLogFile *gbytes.Buffer
 	)
 
 	BeforeEach(func() {
 		dbConnector, mock = db.CreateMockDBConn()
 		dbConnector.Connect()
+		_, _, _, testLogFile = testutils.SetupTestLogger()
 	})
 
 	AfterEach(func() {
@@ -45,6 +49,7 @@ var _ bool = Describe("hub", func() {
 			_, err := services.GetDbList(dbConnector.GetConn())
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("the query has failed"))
+			Expect(string(testLogFile.Contents())).To(ContainSubstring("the query has failed"))
 		})
 	})
 	Describe("GetCountsForDb", func() {

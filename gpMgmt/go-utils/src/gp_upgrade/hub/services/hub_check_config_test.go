@@ -1,6 +1,7 @@
 package services_test
 
 import (
+	"github.com/greenplum-db/gpbackup/testutils"
 	"gp_upgrade/db"
 	"gp_upgrade/hub/services"
 	"gp_upgrade/utils"
@@ -10,6 +11,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	"github.com/onsi/gomega/gbytes"
 	"github.com/pkg/errors"
 	"gopkg.in/DATA-DOG/go-sqlmock.v1"
 )
@@ -20,11 +22,13 @@ var _ = Describe("hub", func() {
 		var (
 			dbConnector db.Connector
 			mock        sqlmock.Sqlmock
+			testLogFile *gbytes.Buffer
 		)
 
 		BeforeEach(func() {
 			dbConnector, mock = db.CreateMockDBConn()
 			dbConnector.Connect()
+			_, _, _, testLogFile = testutils.SetupTestLogger()
 		})
 
 		AfterEach(func() {
@@ -55,6 +59,7 @@ var _ = Describe("hub", func() {
 
 					err := services.SaveQueryResultToJSON(dbConnector.GetConn(), fakeFailingQuery, &SuccessfulWriter{})
 					Expect(err).To(HaveOccurred())
+					Expect(string(testLogFile.Contents())).To(ContainSubstring("the query has failed"))
 				})
 			})
 
@@ -68,6 +73,7 @@ var _ = Describe("hub", func() {
 
 					Expect(err).To(HaveOccurred())
 					Expect(err.Error()).To(ContainSubstring("I always fail"))
+					Expect(string(testLogFile.Contents())).To(ContainSubstring("I always fail"))
 				})
 			})
 		})

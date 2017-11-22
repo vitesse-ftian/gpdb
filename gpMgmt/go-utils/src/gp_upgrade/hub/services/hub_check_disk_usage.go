@@ -19,6 +19,7 @@ const (
 func (s *cliToHubListenerImpl) CheckDiskUsage(ctx context.Context,
 	in *pb.CheckDiskUsageRequest) (*pb.CheckDiskUsageReply, error) {
 
+	gpbackupUtils.GetLogger().Info("starting CheckDiskUsage")
 	var replyMessages []string
 	reader := configutils.Reader{}
 	hostnames := reader.GetHostnames()
@@ -29,6 +30,7 @@ func (s *cliToHubListenerImpl) CheckDiskUsage(ctx context.Context,
 			clients = append(clients, configutils.ClientAndHostname{Client: pb.NewCommandListenerClient(conn), Hostname: hostnames[i]})
 			defer conn.Close()
 		} else {
+			gpbackupUtils.GetLogger().Error(err.Error())
 			replyMessages = append(replyMessages, "ERROR: couldn't get gRPC conn to "+hostnames[i])
 		}
 	}
@@ -43,11 +45,10 @@ func GetDiskUsageFromSegmentHosts(clients []configutils.ClientAndHostname) []str
 		reply, err := clients[i].Client.CheckDiskUsageOnAgents(context.Background(),
 			&pb.CheckDiskUsageRequestToAgent{})
 		if err != nil {
-			replyMessages = append(replyMessages, "Could not get disk usage from: "+clients[i].Hostname)
 			gpbackupUtils.GetLogger().Error(err.Error())
+			replyMessages = append(replyMessages, "Could not get disk usage from: "+clients[i].Hostname)
 			continue
 		}
-		//todo: get hostname from clientconn?
 		foundAnyTooFull := false
 		for _, line := range reply.ListOfFileSysUsage {
 			if line.Usage >= diskUsageWarningLimit {
@@ -57,7 +58,6 @@ func GetDiskUsageFromSegmentHosts(clients []configutils.ClientAndHostname) []str
 			}
 		}
 		if !foundAnyTooFull {
-			//TODO actual hostname instead of hostA
 			replyMessages = append(replyMessages, fmt.Sprintf("diskspace check - %s - OK", clients[i].Hostname))
 		}
 	}

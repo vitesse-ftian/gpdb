@@ -23,7 +23,8 @@ var _ = Describe("check", func() {
 	)
 
 	killHub := func() {
-		pkillCmd := exec.Command("pkill", "gp_upgrade_hub")
+		//pkill gp_upgrade_ will kill both gp_upgrade_hub and gp_upgrade_agent
+		pkillCmd := exec.Command("pkill", "gp_upgrade_")
 		pkillCmd.Run()
 	}
 

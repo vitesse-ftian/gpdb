@@ -3,8 +3,10 @@ package services_test
 import (
 	"database/sql/driver"
 	"errors"
+	"github.com/greenplum-db/gpbackup/testutils"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gbytes"
 	"gopkg.in/DATA-DOG/go-sqlmock.v1"
 	"gp_upgrade/db"
 	"gp_upgrade/hub/services"
@@ -14,11 +16,13 @@ var _ bool = Describe("hub", func() {
 	var (
 		dbConnector db.Connector
 		mock        sqlmock.Sqlmock
+		testLogFile *gbytes.Buffer
 	)
 
 	BeforeEach(func() {
 		dbConnector, mock = db.CreateMockDBConn()
 		dbConnector.Connect()
+		_, _, _, testLogFile = testutils.SetupTestLogger()
 	})
 
 	AfterEach(func() {
@@ -44,6 +48,7 @@ var _ bool = Describe("hub", func() {
 			_, err := services.VerifyVersion(dbConnector.GetConn())
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("couldn't connect to db"))
+			Expect(string(testLogFile.Contents())).To(ContainSubstring("couldn't connect to db"))
 		})
 		It("select VERSION() query didn't work", func() {
 			mock.ExpectQuery(services.VERSION_QUERY).
@@ -51,6 +56,7 @@ var _ bool = Describe("hub", func() {
 			_, err := services.VerifyVersion(dbConnector.GetConn())
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("Didn't get a version string match"))
+			Expect(string(testLogFile.Contents())).To(ContainSubstring("Didn't get a version string match"))
 		})
 		It("converting version string to Version object fails", func() {
 			mock.ExpectQuery(services.VERSION_QUERY).
@@ -58,6 +64,7 @@ var _ bool = Describe("hub", func() {
 			_, err := services.VerifyVersion(dbConnector.GetConn())
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("Expected version to be non-empty string"))
+			Expect(string(testLogFile.Contents())).To(ContainSubstring("Expected version to be non-empty string"))
 		})
 		It("reports that version is incompatible", func() {
 
@@ -66,6 +73,7 @@ var _ bool = Describe("hub", func() {
 			versionCheckOk, err := services.VerifyVersion(dbConnector.GetConn())
 			Expect(err).ToNot(HaveOccurred())
 			Expect(versionCheckOk).To(Equal(false))
+			Expect(string(testLogFile.Contents())).To(ContainSubstring("falling through"))
 		})
 	})
 })

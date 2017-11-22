@@ -27,6 +27,6 @@ func (req DiskUsageChecker) Execute(dbPort int) error {
 	for _, segmentFileSysUsage := range reply.SegmentFileSysUsage {
 		logger.Info(segmentFileSysUsage)
 	}
-	logger.Info("Check object count request is processed.")
+	logger.Info("Check disk space request is processed.")
 	return nil
 }
