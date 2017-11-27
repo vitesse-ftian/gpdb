@@ -35,6 +35,24 @@ func (m *MockCliToHubClient) EXPECT() *MockCliToHubClientMockRecorder {
 	return m.recorder
 }
 
+// Ping mocks base method
+func (m *MockCliToHubClient) Ping(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*PingReply, error) {
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "Ping", varargs...)
+	ret0, _ := ret[0].(*PingReply)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Ping indicates an expected call of Ping
+func (mr *MockCliToHubClientMockRecorder) Ping(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Ping", reflect.TypeOf((*MockCliToHubClient)(nil).Ping), varargs...)
+}
+
 // StatusUpgrade mocks base method
 func (m *MockCliToHubClient) StatusUpgrade(ctx context.Context, in *StatusUpgradeRequest, opts ...grpc.CallOption) (*StatusUpgradeReply, error) {
 	varargs := []interface{}{ctx, in}
@@ -146,6 +164,19 @@ func NewMockCliToHubServer(ctrl *gomock.Controller) *MockCliToHubServer {
 // EXPECT returns an object that allows the caller to indicate expected use
 func (m *MockCliToHubServer) EXPECT() *MockCliToHubServerMockRecorder {
 	return m.recorder
+}
+
+// Ping mocks base method
+func (m *MockCliToHubServer) Ping(arg0 context.Context, arg1 *PingRequest) (*PingReply, error) {
+	ret := m.ctrl.Call(m, "Ping", arg0, arg1)
+	ret0, _ := ret[0].(*PingReply)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Ping indicates an expected call of Ping
+func (mr *MockCliToHubServerMockRecorder) Ping(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Ping", reflect.TypeOf((*MockCliToHubServer)(nil).Ping), arg0, arg1)
 }
 
 // StatusUpgrade mocks base method

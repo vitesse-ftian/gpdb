@@ -3,12 +3,17 @@ syntax = "proto3";
 package idl;
 
 service CliToHub {
+    rpc Ping(PingRequest) returns (PingReply) {}
     rpc StatusUpgrade(StatusUpgradeRequest) returns (StatusUpgradeReply) {}
     rpc CheckConfig(CheckConfigRequest) returns (CheckConfigReply) {}
     rpc CheckObjectCount(CheckObjectCountRequest) returns (CheckObjectCountReply) {}
     rpc CheckVersion(CheckVersionRequest) returns (CheckVersionReply) {}
     rpc CheckDiskUsage(CheckDiskUsageRequest) returns (CheckDiskUsageReply) {}
 }
+
+message PingRequest {
+}
+message PingReply {}
 
 message StatusUpgradeRequest {}
 

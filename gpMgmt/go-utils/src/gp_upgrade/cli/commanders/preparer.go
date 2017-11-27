@@ -1,15 +1,21 @@
 package commanders
 
 import (
+	"context"
 	"errors"
 	"os/exec"
 	"strconv"
 	"strings"
 
+	pb "gp_upgrade/idl"
+
 	gpbackupUtils "github.com/greenplum-db/gpbackup/utils"
+	"time"
 )
 
 type Preparer struct{}
+
+var NumberOfConnectionAttempt = 10
 
 func (p Preparer) StartHub() error {
 	logger := gpbackupUtils.GetLogger()
@@ -33,6 +39,15 @@ func (p Preparer) StartHub() error {
 	}
 	logger.Debug("gp_upgrade_hub started")
 	return nil
+}
+
+func (p Preparer) VerifyConnectivity(client pb.CliToHubClient) error {
+	_, err := client.Ping(context.Background(), &pb.PingRequest{})
+	for i := 0; i < NumberOfConnectionAttempt && err != nil; i++ {
+		_, err = client.Ping(context.Background(), &pb.PingRequest{})
+		time.Sleep(1 * time.Second)
+	}
+	return err
 }
 
 func howManyHubsRunning() (int, error) {

@@ -38,10 +38,28 @@ func main() {
 		Use:   "start-hub",
 		Short: "starts the hub",
 		Long:  "starts the hub",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		Run: func(cmd *cobra.Command, args []string) {
 			gpbackupUtils.InitializeLogging("gp_upgrade_cli", "")
 			preparer := commanders.Preparer{}
-			return preparer.StartHub()
+			err := preparer.StartHub()
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
+
+			conn, connConfigErr := grpc.Dial("localhost:"+hubPort, grpc.WithInsecure())
+			if connConfigErr != nil {
+				fmt.Println(connConfigErr)
+				os.Exit(1)
+			}
+			client := pb.NewCliToHubClient(conn)
+			err = preparer.VerifyConnectivity(client)
+
+			if err != nil {
+				gpbackupUtils.GetLogger().Error("gp_upgrade is unable to connect via gRPC to the hub")
+				gpbackupUtils.GetLogger().Error("%v", err)
+				os.Exit(1)
+			}
 		},
 	}
 
