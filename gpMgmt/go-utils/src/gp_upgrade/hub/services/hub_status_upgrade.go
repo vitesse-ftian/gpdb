@@ -1,9 +1,13 @@
 package services
 
 import (
+	"errors"
 	"gp_upgrade/hub/configutils"
+	"gp_upgrade/hub/upgradestatus"
 	pb "gp_upgrade/idl"
 	"gp_upgrade/utils"
+	"os"
+	"path/filepath"
 
 	gpbackupUtils "github.com/greenplum-db/gpbackup/utils"
 	"golang.org/x/net/context"
@@ -21,8 +25,17 @@ func (s *cliToHubListenerImpl) StatusUpgrade(ctx context.Context, in *pb.StatusU
 	}
 	prepareInitStatus, _ := GetPrepareNewClusterConfigStatus()
 
+	homeDirectory := os.Getenv("HOME")
+	if homeDirectory == "" {
+		return nil, errors.New("Could not find the HOME environment")
+	}
+	pgUpgradePath := filepath.Join(homeDirectory, ".gp_upgrade/pg_upgrade")
+	convertMaster := upgradestatus.NewConvertMaster(pgUpgradePath)
+
+	masterUpgradeStatus, _ := convertMaster.GetStatus()
+
 	reply := &pb.StatusUpgradeReply{}
-	reply.ListOfUpgradeStepStatuses = append(reply.ListOfUpgradeStepStatuses, demoStepStatus, demoSeginstallStatus, prepareInitStatus)
+	reply.ListOfUpgradeStepStatuses = append(reply.ListOfUpgradeStepStatuses, demoStepStatus, demoSeginstallStatus, prepareInitStatus, masterUpgradeStatus)
 	return reply, nil
 }
 

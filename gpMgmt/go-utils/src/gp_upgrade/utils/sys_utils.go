@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"os/user"
+	"path/filepath"
 	"time"
 )
 
@@ -28,11 +29,13 @@ type SystemFunctions struct {
 	IsNotExist  func(err error) bool
 	MkdirAll    func(path string, perm os.FileMode) error
 	Now         func() time.Time
+	Open        func(name string) (*os.File, error)
 	OpenFile    func(name string, flag int, perm os.FileMode) (*os.File, error)
 	Stat        func(name string) (os.FileInfo, error)
 	//TODO consider other patterns here?
 	//first attempt at enabling us to mock exec.Command().Output()
 	ExecCmdOutput func(name string, args ...string) ([]byte, error)
+	FilePathGlob  func(pattern string) ([]string, error)
 }
 
 func InitializeSystemFunctions() *SystemFunctions {
@@ -44,9 +47,11 @@ func InitializeSystemFunctions() *SystemFunctions {
 		IsNotExist:    os.IsNotExist,
 		MkdirAll:      os.MkdirAll,
 		Now:           time.Now,
+		Open:          os.Open,
 		OpenFile:      os.OpenFile,
 		Stat:          os.Stat,
 		ExecCmdOutput: CommandOutput,
+		FilePathGlob:  filepath.Glob,
 	}
 }
 

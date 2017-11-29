@@ -28,6 +28,7 @@ func main() {
 	var masterHost string
 	var dbPort int
 	var newClusterDbPort int
+	var oldDataDir, oldBinDir, newDataDir, newBinDir string
 
 	var cmdPrepare = &cobra.Command{
 		Use:   "prepare",
@@ -217,6 +218,33 @@ func main() {
 		},
 	}
 
+	var cmdUpgrade = &cobra.Command{
+		Use:   "upgrade",
+		Short: "starts upgrade process",
+		Long:  `starts upgrade process`,
+	}
+
+	var cmdUpgradeSubConvertMaster = &cobra.Command{
+		Use:   "convert-master",
+		Short: "start upgrade process on master",
+		Long:  `start upgrade process on master`,
+		Run: func(cmd *cobra.Command, args []string) {
+			conn, connConfigErr := grpc.Dial("localhost:"+hubPort,
+				grpc.WithInsecure())
+			if connConfigErr != nil {
+				fmt.Println(connConfigErr)
+				os.Exit(1)
+			}
+
+			client := pb.NewCliToHubClient(conn)
+			err := commanders.NewUpgrader(client).ConvertMaster(oldDataDir, oldBinDir, newDataDir, newBinDir)
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
+		},
+	}
+
 	var rootCmd = &cobra.Command{Use: "gp_upgrade"}
 
 	//TODO this could be improved.
@@ -225,7 +253,7 @@ func main() {
 		log.Fatal("Please specify one command of: prepare, check, status or version")
 	}
 	// all root level
-	rootCmd.AddCommand(cmdPrepare, cmdStatus, cmdCheck, cmdVersion)
+	rootCmd.AddCommand(cmdPrepare, cmdStatus, cmdCheck, cmdVersion, cmdUpgrade)
 
 	// prepare subcommmands
 	cmdPrepare.AddCommand(cmdPrepareSubStartHub)
@@ -239,6 +267,13 @@ func main() {
 	cmdCheck.AddCommand(cmdCheckSubObjectCountCommand)
 	cmdCheck.AddCommand(cmdCheckSubDiskSpaceCommand)
 	cmdCheck.AddCommand(cmdCheckSubConfigCommand)
+
+	// upgrade subcommands
+	cmdUpgrade.AddCommand(cmdUpgradeSubConvertMaster)
+	cmdUpgradeSubConvertMaster.PersistentFlags().StringVar(&oldDataDir, "old-datadir", "", "data directory for old gpdb version")
+	cmdUpgradeSubConvertMaster.PersistentFlags().StringVar(&oldBinDir, "old-bindir", "", "install directory for old gpdb version")
+	cmdUpgradeSubConvertMaster.PersistentFlags().StringVar(&newDataDir, "new-datadir", "", "data directory for new gpdb version")
+	cmdUpgradeSubConvertMaster.PersistentFlags().StringVar(&newBinDir, "new-bindir", "", "install directory for new gpdb version")
 
 	//TODO if give a subcommand that doesn't exist, we should give the user feedback
 

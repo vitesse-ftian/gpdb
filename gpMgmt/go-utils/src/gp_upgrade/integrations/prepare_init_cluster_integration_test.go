@@ -34,7 +34,9 @@ var _ = Describe("prepare", func() {
 			Eventually(statusSessionPending).Should(gbytes.Say("PENDING - Initialize upgrade target cluster"))
 
 			port := os.Getenv("PGPORT")
-			session := runCommand("prepare", "init-cluster", "--port", port, "&")
+			Expect(port).ToNot(Equal(""), "PGPORT needs to be set!")
+
+			session := runCommand("prepare", "init-cluster", "--port", port)
 
 			if session.ExitCode() != 0 {
 				fmt.Println("make sure greenplum is running")

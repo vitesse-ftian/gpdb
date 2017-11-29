@@ -75,3 +75,26 @@ func (reader Reader) GetHostnames() []string {
 func (reader Reader) GetSegmentConfiguration() SegmentConfiguration {
 	return reader.config
 }
+
+func (reader Reader) GetMasterDataDir() string {
+	config := reader.GetSegmentConfiguration()
+	for i := 0; i < len(config); i++ {
+		segment := config[i]
+		if segment.Content == -1 {
+			return segment.Fselocation
+		}
+	}
+	return ""
+}
+
+func (reader Reader) GetMaster() *Segment {
+	var nilSegment *Segment
+	config := reader.GetSegmentConfiguration()
+	for i := 0; i < len(config); i++ {
+		segment := config[i]
+		if segment.Content == -1 {
+			return &segment
+		}
+	}
+	return nilSegment
+}

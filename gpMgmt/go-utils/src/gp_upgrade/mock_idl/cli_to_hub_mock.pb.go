@@ -161,6 +161,24 @@ func (mr *MockCliToHubClientMockRecorder) PrepareInitCluster(ctx, in interface{}
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PrepareInitCluster", reflect.TypeOf((*MockCliToHubClient)(nil).PrepareInitCluster), varargs...)
 }
 
+// UpgradeConvertMaster mocks base method
+func (m *MockCliToHubClient) UpgradeConvertMaster(ctx context.Context, in *UpgradeConvertMasterRequest, opts ...grpc.CallOption) (*UpgradeConvertMasterReply, error) {
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "UpgradeConvertMaster", varargs...)
+	ret0, _ := ret[0].(*UpgradeConvertMasterReply)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpgradeConvertMaster indicates an expected call of UpgradeConvertMaster
+func (mr *MockCliToHubClientMockRecorder) UpgradeConvertMaster(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpgradeConvertMaster", reflect.TypeOf((*MockCliToHubClient)(nil).UpgradeConvertMaster), varargs...)
+}
+
 // MockCliToHubServer is a mock of CliToHubServer interface
 type MockCliToHubServer struct {
 	ctrl     *gomock.Controller
@@ -273,4 +291,17 @@ func (m *MockCliToHubServer) PrepareInitCluster(arg0 context.Context, arg1 *Prep
 // PrepareInitCluster indicates an expected call of PrepareInitCluster
 func (mr *MockCliToHubServerMockRecorder) PrepareInitCluster(arg0, arg1 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PrepareInitCluster", reflect.TypeOf((*MockCliToHubServer)(nil).PrepareInitCluster), arg0, arg1)
+}
+
+// UpgradeConvertMaster mocks base method
+func (m *MockCliToHubServer) UpgradeConvertMaster(arg0 context.Context, arg1 *UpgradeConvertMasterRequest) (*UpgradeConvertMasterReply, error) {
+	ret := m.ctrl.Call(m, "UpgradeConvertMaster", arg0, arg1)
+	ret0, _ := ret[0].(*UpgradeConvertMasterReply)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpgradeConvertMaster indicates an expected call of UpgradeConvertMaster
+func (mr *MockCliToHubServerMockRecorder) UpgradeConvertMaster(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpgradeConvertMaster", reflect.TypeOf((*MockCliToHubServer)(nil).UpgradeConvertMaster), arg0, arg1)
 }

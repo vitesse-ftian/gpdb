@@ -10,6 +10,7 @@ service CliToHub {
     rpc CheckVersion(CheckVersionRequest) returns (CheckVersionReply) {}
     rpc CheckDiskUsage(CheckDiskUsageRequest) returns (CheckDiskUsageReply) {}
     rpc PrepareInitCluster(PrepareInitClusterRequest) returns (PrepareInitClusterReply) {}
+    rpc UpgradeConvertMaster(UpgradeConvertMasterRequest) returns (UpgradeConvertMasterReply) {}
 }
 
 message PingRequest {
@@ -32,6 +33,7 @@ enum UpgradeSteps {
     CHECK_CONFIG = 1;
     SEGINSTALL = 2;
     PREPARE_INIT_CLUSTER = 3;
+    MASTERUPGRADE = 4;
 }
 
 enum StepStatus {
@@ -84,3 +86,12 @@ message PrepareInitClusterRequest {
     int32 dbPort = 1;
 }
 message PrepareInitClusterReply {}
+
+message UpgradeConvertMasterRequest {
+    string OldBinDir = 1;
+    string OldDataDir = 2;
+    string NewBinDir = 3;
+    string NewDataDir = 4;
+}
+
+message UpgradeConvertMasterReply {}
