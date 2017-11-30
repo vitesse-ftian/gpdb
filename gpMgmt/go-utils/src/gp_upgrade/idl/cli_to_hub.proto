@@ -31,6 +31,7 @@ enum UpgradeSteps {
     UNKNOWN_STEP = 0; // http://androiddevblog.com/protocol-buffers-pitfall-adding-enum-values/
     CHECK_CONFIG = 1;
     SEGINSTALL = 2;
+    PREPARE_INIT_CLUSTER = 3;
 }
 
 enum StepStatus {

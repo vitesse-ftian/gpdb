@@ -8,6 +8,8 @@ import (
 	"os"
 	"os/exec"
 
+	"github.com/onsi/gomega/gbytes"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gexec"
@@ -46,17 +48,21 @@ var _ = Describe("prepare", func() {
 			prepareSession := runCommand("prepare", "start-hub")
 			Eventually(prepareSession).Should(Exit(0))
 
-			port := os.Getenv("PGPORT")
-			session := runCommand("prepare", "init-cluster", "--port", port)
+			statusSessionPending := runCommand("status", "upgrade")
+			Eventually(statusSessionPending).Should(gbytes.Say("PENDING - Initialize upgrade target cluster"))
 
-			/* XXX: There will be a waiting game here once generating a cluster is implemented */
+			port := os.Getenv("PGPORT")
+			session := runCommand("prepare", "init-cluster", "--port", port, "&")
 
 			if session.ExitCode() != 0 {
 				fmt.Println("make sure greenplum is running")
 			}
 			Eventually(session).Should(Exit(0))
-			// check file
 
+			statusSession := runCommand("status", "upgrade")
+			Eventually(statusSession).Should(gbytes.Say("COMPLETE - Initialize upgrade target cluster"))
+
+			// check file
 			_, err := ioutil.ReadFile(configutils.GetNewClusterConfigFilePath())
 			testUtils.Check("cannot read file", err)
 

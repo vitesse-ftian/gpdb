@@ -5,9 +5,10 @@ import (
 	. "github.com/onsi/gomega"
 
 	"context"
-	"github.com/pkg/errors"
 	pb "gp_upgrade/idl"
 	"gp_upgrade/utils"
+
+	"github.com/pkg/errors"
 )
 
 var _ = Describe("CommandListener", func() {
@@ -17,7 +18,7 @@ var _ = Describe("CommandListener", func() {
 
 	AfterEach(func() {
 		//any mocking of utils.System function pointers should be reset by calling InitializeSystemFunctions
-		utils.InitializeSystemFunctions()
+		utils.System = utils.InitializeSystemFunctions()
 	})
 	Describe("check upgrade status", func() {
 		It("returns the shell command output", func() {

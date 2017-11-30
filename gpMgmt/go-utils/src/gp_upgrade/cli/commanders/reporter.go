@@ -14,9 +14,10 @@ type Reporter struct {
 }
 
 var UpgradeStepsMessage = map[pb.UpgradeSteps]string{
-	pb.UpgradeSteps_UNKNOWN_STEP: "- Unknown step",
-	pb.UpgradeSteps_CHECK_CONFIG: "- Configuration Check",
-	pb.UpgradeSteps_SEGINSTALL:   "- Install binaries on segments",
+	pb.UpgradeSteps_UNKNOWN_STEP:         "- Unknown step",
+	pb.UpgradeSteps_CHECK_CONFIG:         "- Configuration Check",
+	pb.UpgradeSteps_SEGINSTALL:           "- Install binaries on segments",
+	pb.UpgradeSteps_PREPARE_INIT_CLUSTER: "- Initialize upgrade target cluster",
 }
 
 func NewReporter(client pb.CliToHubClient) Reporter {
@@ -39,7 +40,6 @@ func (r *Reporter) OverallUpgradeStatus() error {
 	}
 
 	logger.Info("PENDING - Validate compatible versions for upgrade")
-	logger.Info("PENDING - Initialize upgrade target cluster")
 	logger.Info("PENDING - Shutdown cluster")
 	logger.Info("PENDING - Master server upgrade")
 	logger.Info("PENDING - Master OID file shared with segments")
