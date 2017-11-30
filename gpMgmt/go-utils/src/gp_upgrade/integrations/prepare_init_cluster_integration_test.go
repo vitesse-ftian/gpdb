@@ -6,7 +6,6 @@ import (
 	"gp_upgrade/testUtils"
 	"io/ioutil"
 	"os"
-	"os/exec"
 
 	"github.com/onsi/gomega/gbytes"
 
@@ -15,19 +14,20 @@ import (
 	. "github.com/onsi/gomega/gexec"
 )
 
+// needs the cli and the hub
+// the `prepare start-hub` tests are currently in master_only_integration_test
 var _ = Describe("prepare", func() {
 	var (
 		save_home_dir string
 	)
 
-	killHub := func() {
-		//pkill gp_upgrade_ will kill both gp_upgrade_hub and gp_upgrade_agent
-		pkillCmd := exec.Command("pkill", "gp_upgrade_")
-		pkillCmd.Run()
-	}
-
 	BeforeEach(func() {
 		save_home_dir = testUtils.ResetTempHomeDir()
+
+		/* We need to make sure that we're starting up a new hub. This ensures that we're running a hub with a specific HOME directory.
+		 * We can also consider changing the test such that we are removing the new_cluster_config file that we generate per run.
+		 */
+		restartHub()
 	})
 
 	AfterEach(func() {
@@ -44,10 +44,6 @@ var _ = Describe("prepare", func() {
 	*/
 	Describe("Given that a gpdb cluster is up, in this case reusing the single cluster for other test.", func() {
 		It("can save the database configuration json under the name 'new cluster'", func() {
-
-			prepareSession := runCommand("prepare", "start-hub")
-			Eventually(prepareSession).Should(Exit(0))
-
 			statusSessionPending := runCommand("status", "upgrade")
 			Eventually(statusSessionPending).Should(gbytes.Say("PENDING - Initialize upgrade target cluster"))
 

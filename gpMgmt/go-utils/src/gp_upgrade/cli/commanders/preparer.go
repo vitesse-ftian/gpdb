@@ -21,12 +21,12 @@ func NewPreparer(client pb.CliToHubClient) Preparer {
 	return Preparer{client: client}
 }
 
-var NumberOfConnectionAttempt = 10
+var NumberOfConnectionAttempt = 100
 
 func (p Preparer) StartHub() error {
 	logger := gpbackupUtils.GetLogger()
 
-	countHubs, err := howManyHubsRunning()
+	countHubs, err := HowManyHubsRunning()
 	if err != nil {
 		logger.Error("failed to determine if hub already running")
 		return err
@@ -62,12 +62,12 @@ func (p Preparer) VerifyConnectivity(client pb.CliToHubClient) error {
 	_, err := client.Ping(context.Background(), &pb.PingRequest{})
 	for i := 0; i < NumberOfConnectionAttempt && err != nil; i++ {
 		_, err = client.Ping(context.Background(), &pb.PingRequest{})
-		time.Sleep(1 * time.Second)
+		time.Sleep(100 * time.Millisecond)
 	}
 	return err
 }
 
-func howManyHubsRunning() (int, error) {
+func HowManyHubsRunning() (int, error) {
 	howToLookForHub := `ps -ef | grep -c "[g]p_upgrade_hub"` // use square brackets to avoid finding yourself in matches
 	output, err := exec.Command("bash", "-c", howToLookForHub).Output()
 	value, convErr := strconv.Atoi(strings.TrimSpace(string(output)))

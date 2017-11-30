@@ -1,6 +1,7 @@
 package integrations_test
 
 import (
+	"gp_upgrade/cli/commanders"
 	"gp_upgrade/sshClient"
 	"gp_upgrade/testUtils"
 
@@ -136,4 +137,25 @@ func ShutDownSshdServer() {
 		sshd.Process.Kill()
 		sshd = nil
 	}
+}
+
+func ensureHubIsUp() {
+	countHubs, _ := commanders.HowManyHubsRunning()
+
+	if countHubs == 0 {
+		prepareSession := runCommand("prepare", "start-hub")
+		Eventually(prepareSession).Should(Exit(0))
+	}
+
+}
+
+func killHub() {
+	//pkill gp_upgrade_ will kill both gp_upgrade_hub and gp_upgrade_agent
+	pkillCmd := exec.Command("pkill", "gp_upgrade_")
+	pkillCmd.Run()
+}
+
+func restartHub() {
+	killHub()
+	ensureHubIsUp()
 }

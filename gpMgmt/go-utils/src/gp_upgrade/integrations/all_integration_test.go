@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/gomega/gexec"
 )
 
+// cli only; doesn't care about hub or agent
 var _ = Describe("all", func() {
 	It("handles no params call by outputting help text", func() {
 		session := runCommand()

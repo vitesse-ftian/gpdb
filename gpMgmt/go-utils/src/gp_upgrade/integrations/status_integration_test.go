@@ -1,28 +1,21 @@
 package integrations_test
 
 import (
-	"os/exec"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
 	. "github.com/onsi/gomega/gexec"
 )
 
+// has one test needing hub up; one test needing it down
+// ultimately, the status command isn't uniquely responsible for the cases where the hub is down
+// consider moving this file's unhappy path alongside the `prepare start-hub` integration tests
 var _ = Describe("status", func() {
-	killHub := func() {
-		//pkill gp_upgrade_ will kill both gp_upgrade_hub and gp_upgrade_agent
-		pkillCmd := exec.Command("pkill", "gp_upgrade_")
-		pkillCmd.Run()
-	}
-
+	BeforeEach(ensureHubIsUp)
 	AfterEach(killHub)
 
 	Describe("upgrade", func() {
 		It("Reports some demo status from the hub", func() {
-			prepareSession := runCommand("prepare", "start-hub")
-			Eventually(prepareSession).Should(Exit(0))
-
 			statusSession := runCommand("status", "upgrade")
 			Eventually(statusSession).Should(Exit(0))
 
@@ -35,6 +28,7 @@ var _ = Describe("status", func() {
 		It("Explodes if the hub isn't up", func() {
 			//beforeSuite + individual tests' afterEach all stop the hub
 
+			killHub()
 			statusSession := runCommand("status", "upgrade")
 			expectedErrorOutput := `ERROR - Unable to connect to hub`
 			Eventually(statusSession.Err).Should(gbytes.Say(expectedErrorOutput))

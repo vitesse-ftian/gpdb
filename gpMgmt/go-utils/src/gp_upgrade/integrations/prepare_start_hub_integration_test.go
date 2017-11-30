@@ -11,16 +11,16 @@ import (
 	. "github.com/onsi/gomega/gexec"
 )
 
+// this is all about prepare start-hub
+// so expect each test to be specific and hands on about what it wants?
+// and this test file overall probably wants the hub to be down before it starts
 var _ = Describe("integration tests running on master only", func() {
 
+	AfterEach(killHub)
 	Describe("gp_upgrade prepare", func() {
-		Describe("start-hub", func() {
-			AfterEach(func() {
-				//pkill gp_upgrade_ will kill both gp_upgrade_hub and gp_upgrade_agent
-				pkillCmd := exec.Command("pkill", "gp_upgrade_")
-				pkillCmd.Run()
-			})
+		BeforeEach(killHub)
 
+		Describe("start-hub", func() {
 			basicHappyPathCheck := func() {
 				gpUpgradeSession := runCommand("prepare", "start-hub")
 				Eventually(gpUpgradeSession).Should(Exit(0))
@@ -34,6 +34,7 @@ var _ = Describe("integration tests running on master only", func() {
 			It("finds the right hub binary and starts a daemonized process", basicHappyPathCheck)
 
 			It("works even if run from the same directory as where the binaries are", func() {
+				// because we don't want the grep to shell expand
 				hubDirectoryPath := path.Dir(hubBinaryPath)
 				previousDirectory, err := os.Getwd()
 				if err != nil {
