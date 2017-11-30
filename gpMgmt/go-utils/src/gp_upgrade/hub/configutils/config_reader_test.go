@@ -30,7 +30,8 @@ var _ = Describe("configutils reader", func() {
 	)
 
 	BeforeEach(func() {
-		saved_old_home = testUtils.ResetTempHomeDir()
+		saved_old_home = os.Getenv("HOME")
+		testUtils.EnsureHomeDirIsTempAndClean()
 		err := json.Unmarshal([]byte(expected_json), &json_structure)
 		Expect(err).NotTo(HaveOccurred())
 		subject = configutils.Reader{}

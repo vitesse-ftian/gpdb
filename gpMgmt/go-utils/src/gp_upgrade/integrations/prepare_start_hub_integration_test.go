@@ -11,17 +11,12 @@ import (
 	. "github.com/onsi/gomega/gexec"
 )
 
-// this is all about prepare start-hub
-// so expect each test to be specific and hands on about what it wants?
-// and this test file overall probably wants the hub to be down before it starts
 var _ = Describe("integration tests running on master only", func() {
 
-	AfterEach(killHub)
 	Describe("gp_upgrade prepare", func() {
-		BeforeEach(killHub)
-
 		Describe("start-hub", func() {
 			basicHappyPathCheck := func() {
+				killHub()
 				gpUpgradeSession := runCommand("prepare", "start-hub")
 				Eventually(gpUpgradeSession).Should(Exit(0))
 
@@ -52,7 +47,7 @@ var _ = Describe("integration tests running on master only", func() {
 
 			It("returns error if gp_upgrade_hub is already running", func() {
 				//start a hub if necessary
-				runCommand("prepare", "start-hub")
+				ensureHubIsUp()
 
 				//second start should return error
 				secondSession := runCommand("prepare", "start-hub")

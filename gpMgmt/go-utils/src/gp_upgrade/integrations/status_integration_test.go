@@ -7,15 +7,10 @@ import (
 	. "github.com/onsi/gomega/gexec"
 )
 
-// has one test needing hub up; one test needing it down
-// ultimately, the status command isn't uniquely responsible for the cases where the hub is down
-// consider moving this file's unhappy path alongside the `prepare start-hub` integration tests
 var _ = Describe("status", func() {
-	BeforeEach(ensureHubIsUp)
-	AfterEach(killHub)
-
 	Describe("upgrade", func() {
 		It("Reports some demo status from the hub", func() {
+			ensureHubIsUp()
 			statusSession := runCommand("status", "upgrade")
 			Eventually(statusSession).Should(Exit(0))
 
@@ -25,9 +20,9 @@ var _ = Describe("status", func() {
 			Eventually(statusSession).Should(gbytes.Say(expectedDemoOutputPart2))
 		})
 
+		// ultimately, the status command isn't uniquely responsible for the cases where the hub is down
+		// consider moving this case alongside the `prepare start-hub` integration tests
 		It("Explodes if the hub isn't up", func() {
-			//beforeSuite + individual tests' afterEach all stop the hub
-
 			killHub()
 			statusSession := runCommand("status", "upgrade")
 			expectedErrorOutput := `ERROR - Unable to connect to hub`

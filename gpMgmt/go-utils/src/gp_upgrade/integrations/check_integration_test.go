@@ -3,7 +3,6 @@ package integrations_test
 import (
 	"gp_upgrade/testUtils"
 	"io/ioutil"
-	"os"
 
 	"gp_upgrade/hub/configutils"
 
@@ -17,21 +16,8 @@ import (
 // needs the cli and the hub
 var _ = Describe("check", func() {
 
-	var (
-		save_home_dir string
-	)
-
 	BeforeEach(func() {
-		save_home_dir = testUtils.ResetTempHomeDir()
-		/* We need to make sure that we're starting up a new hub. This ensures that we're running a hub with a specific HOME directory.
-		 * We can also consider changing the test such that we are removing the new_cluster_config file that we generate per run.
-		 */
-		restartHub()
-	})
-
-	AfterEach(func() {
-		os.Setenv("HOME", save_home_dir)
-		killHub()
+		ensureHubIsUp()
 	})
 
 	Describe("when a greenplum master db on localhost is up and running", func() {

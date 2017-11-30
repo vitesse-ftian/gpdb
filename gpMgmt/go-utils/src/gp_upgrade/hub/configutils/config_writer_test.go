@@ -8,9 +8,10 @@ import (
 	"io/ioutil"
 	"os"
 
+	"gp_upgrade/hub/configutils"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"gp_upgrade/hub/configutils"
 )
 
 var _ = Describe("configWriter", func() {
@@ -20,7 +21,8 @@ var _ = Describe("configWriter", func() {
 	)
 
 	BeforeEach(func() {
-		saved_old_home = testUtils.ResetTempHomeDir()
+		saved_old_home = os.Getenv("HOME")
+		testUtils.EnsureHomeDirIsTempAndClean()
 		subject = configutils.NewWriter("/tmp/doesnotexist")
 	})
 

@@ -59,15 +59,21 @@ var _ = BeforeSuite(func() {
 	sshdPath, err = Build("gp_upgrade/integrations/sshd")
 	Expect(err).NotTo(HaveOccurred())
 
-	// for master_only_integration_test, in `gp_upgrade prepare start-hub`. Fencepost problem where we want to clean up before & after each test
-	pkillCmd := exec.Command("pkill", "gp_upgrade_hub")
-	pkillCmd.Run()
+	/* Tests that need a hub up in a specific home directory should start their
+	* own. Other tests don't need a hub; don't start a fresh one automatically
+	* because it might be a waste. */
+	killHub()
 
 	_, this_file_path, _, _ := runtime.Caller(0)
 	fixture_path = path.Join(path.Dir(this_file_path), "fixtures")
 })
 
-var _ = SynchronizedAfterSuite(func() {}, func() {
+var _ = AfterSuite(func() {
+	/* for a developer who runs `make integration` and then goes on to manually
+	* test things out they should start their own up under a different HOME dir
+	* setting than what ginkgo has been using */
+	killHub()
+
 	CleanupBuildArtifacts()
 })
 
@@ -83,6 +89,8 @@ var _ = BeforeEach(func() {
 	Expect(err).ToNot(HaveOccurred())
 
 	waitForSocketToAllowConnections()
+
+	testUtils.EnsureHomeDirIsTempAndClean()
 })
 
 func waitForSocketToAllowConnections() {

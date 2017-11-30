@@ -1,12 +1,19 @@
 ## Naming
 
-If we want to optimize for find-ability, we should have integration tests
+We want to optimize for find-ability, so we should have integration tests
 corresponding to modules or command functionalities
 
-But if we want to optimize for "how much setup is needed", we should group them
-according to that categorization.
+If we want to optimize for "how much setup is needed", we should write setup
+steps that are idempotent and focused to the areas that need them
 
-Up for debate -- feel free to reorganize.
+## "Vanilla" Test
+
+Most tests will differ in their setup in a clear way for a clear reason. Besides that, they should try to be as "vanilla" as possible to isolate the use case / user flow.
+
+The integration test setup is currently such that the "vanilla" test:
+
+ - Is cool with a hub being up already. If it needs a hub up, it can ensure that it's up
+ - Is cool with an empty home / config directory, because we currently clean that between runs.
 
 ## Gotchas
 

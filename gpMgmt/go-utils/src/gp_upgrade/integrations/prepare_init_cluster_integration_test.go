@@ -14,25 +14,11 @@ import (
 	. "github.com/onsi/gomega/gexec"
 )
 
-// needs the cli and the hub
 // the `prepare start-hub` tests are currently in master_only_integration_test
 var _ = Describe("prepare", func() {
-	var (
-		save_home_dir string
-	)
 
 	BeforeEach(func() {
-		save_home_dir = testUtils.ResetTempHomeDir()
-
-		/* We need to make sure that we're starting up a new hub. This ensures that we're running a hub with a specific HOME directory.
-		 * We can also consider changing the test such that we are removing the new_cluster_config file that we generate per run.
-		 */
-		restartHub()
-	})
-
-	AfterEach(func() {
-		os.Setenv("HOME", save_home_dir)
-		killHub()
+		ensureHubIsUp()
 	})
 
 	/* This is demonstrating the limited implmentation of init-cluster.

@@ -51,7 +51,7 @@ func Check(msg string, e error) {
 	}
 }
 
-func ResetTempHomeDir() string {
+func EnsureHomeDirIsTempAndClean() {
 	configDir := path.Join(TempHomeDir, ".gp_upgrade")
 	if _, err := os.Stat(configDir); !os.IsNotExist(err) {
 		err = os.Chmod(configDir, 0700)
@@ -59,12 +59,10 @@ func ResetTempHomeDir() string {
 	}
 	err := os.RemoveAll(TempHomeDir)
 	Check("cannot remove temp home", err)
-	save := os.Getenv("HOME")
 	err = os.MkdirAll(TempHomeDir, 0700)
 	Check("cannot create home temp dir", err)
 	err = os.Setenv("HOME", TempHomeDir)
 	Check("cannot set home dir", err)
-	return save
 }
 
 func WriteSampleConfig() {

@@ -11,7 +11,6 @@ import (
 	. "github.com/onsi/gomega/gexec"
 )
 
-// cli only; doesn't care about hub or agent
 var _ = Describe("version command", func() {
 	It("reports the version that's injected at build-time", func() {
 		fake_version := fmt.Sprintf("v0.0.0-dev.%d", time.Now().Unix())
