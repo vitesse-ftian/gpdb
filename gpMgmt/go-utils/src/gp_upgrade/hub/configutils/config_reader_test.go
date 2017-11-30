@@ -5,10 +5,11 @@ import (
 	"gp_upgrade/testUtils"
 	"os"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 	"gp_upgrade/hub/configutils"
 	"regexp"
+
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("configutils reader", func() {
@@ -33,6 +34,7 @@ var _ = Describe("configutils reader", func() {
 		err := json.Unmarshal([]byte(expected_json), &json_structure)
 		Expect(err).NotTo(HaveOccurred())
 		subject = configutils.Reader{}
+		subject.OfOldClusterConfig()
 	})
 
 	AfterEach(func() {

@@ -1,10 +1,11 @@
 package services_test
 
 import (
-	"github.com/greenplum-db/gpbackup/testutils"
 	"gp_upgrade/db"
 	"gp_upgrade/hub/services"
 	"gp_upgrade/utils"
+
+	"github.com/greenplum-db/gpbackup/testutils"
 
 	"database/sql/driver"
 
@@ -54,7 +55,7 @@ var _ = Describe("hub", func() {
 		Describe("errors", func() {
 			Describe("when the query fails", func() {
 				It("returns an error", func() {
-					fakeFailingQuery := "SEJECT % ofrm tabel1"
+					fakeFailingQuery := `SEJECT % ofrm tabel1`
 					mock.ExpectQuery(fakeFailingQuery).WillReturnError(errors.New("the query has failed"))
 
 					err := services.SaveQueryResultToJSON(dbConnector.GetConn(), fakeFailingQuery, &SuccessfulWriter{})

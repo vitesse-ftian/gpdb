@@ -1,6 +1,7 @@
 package services_test
 
 import (
+	"github.com/greenplum-db/gpbackup/testutils"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -9,6 +10,9 @@ import (
 )
 
 var _ = Describe("hub", func() {
+	BeforeEach(func() {
+		testutils.SetupTestLogger() // extend to capture the values in a var if future tests need it
+	})
 	Describe("creates a reply", func() {
 		It("sends status messages under good condition", func() {
 			listener := services.NewCliToHubListener()

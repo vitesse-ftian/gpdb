@@ -41,3 +41,7 @@ func GetConfigFilePath() string {
 func GetVersionFilePath() string {
 	return path.Join(GetConfigDir(), "cluster_version.json")
 }
+
+func GetNewClusterConfigFilePath() string {
+	return path.Join(GetConfigDir(), "new_cluster_config.json")
+}

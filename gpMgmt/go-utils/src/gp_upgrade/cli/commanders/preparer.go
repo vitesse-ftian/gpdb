@@ -6,14 +6,20 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"time"
 
 	pb "gp_upgrade/idl"
 
 	gpbackupUtils "github.com/greenplum-db/gpbackup/utils"
-	"time"
 )
 
-type Preparer struct{}
+type Preparer struct {
+	client pb.CliToHubClient
+}
+
+func NewPreparer(client pb.CliToHubClient) Preparer {
+	return Preparer{client: client}
+}
 
 var NumberOfConnectionAttempt = 10
 
@@ -38,6 +44,17 @@ func (p Preparer) StartHub() error {
 		return cmdErr
 	}
 	logger.Debug("gp_upgrade_hub started")
+	return nil
+}
+
+func (p Preparer) InitCluster(dbPort int) error {
+	logger := gpbackupUtils.GetLogger()
+	_, err := p.client.PrepareInitCluster(context.Background(), &pb.PrepareInitClusterRequest{DbPort: int32(dbPort)})
+	if err != nil {
+		return err
+	}
+
+	logger.Info("Gleaning the new cluster config")
 	return nil
 }
 

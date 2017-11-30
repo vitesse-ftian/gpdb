@@ -2,11 +2,12 @@ package services
 
 import (
 	"fmt"
+	"gp_upgrade/hub/configutils"
+	pb "gp_upgrade/idl"
+
 	gpbackupUtils "github.com/greenplum-db/gpbackup/utils"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
-	"gp_upgrade/hub/configutils"
-	pb "gp_upgrade/idl"
 )
 
 const (
@@ -22,6 +23,9 @@ func (s *cliToHubListenerImpl) CheckDiskUsage(ctx context.Context,
 	gpbackupUtils.GetLogger().Info("starting CheckDiskUsage")
 	var replyMessages []string
 	reader := configutils.Reader{}
+	// We don't care whether this the old json vs the new json because we're
+	// just checking the hosts anyways.
+	reader.OfOldClusterConfig()
 	hostnames := reader.GetHostnames()
 	var clients []configutils.ClientAndHostname
 	for i := 0; i < len(hostnames); i++ {

@@ -11,6 +11,7 @@ import (
 	"github.com/greenplum-db/gpbackup/testutils"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gbytes"
 )
 
 var _ = Describe("preparer", func() {
@@ -76,4 +77,17 @@ var _ = Describe("preparer", func() {
 		})
 	})
 
+	Describe("PrepareInitCluster", func() {
+		It("returns successfully if hub gets the request", func() {
+			_, testStdout, _, _ := testutils.SetupTestLogger()
+			client.EXPECT().PrepareInitCluster(
+				gomock.Any(),
+				&pb.PrepareInitClusterRequest{DbPort: int32(11111)},
+			).Return(&pb.PrepareInitClusterReply{}, nil)
+			preparer := commanders.NewPreparer(client)
+			err := preparer.InitCluster(11111)
+			Expect(err).To(BeNil())
+			Eventually(testStdout).Should(gbytes.Say("Gleaning the new cluster config"))
+		})
+	})
 })

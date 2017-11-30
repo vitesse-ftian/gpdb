@@ -9,6 +9,7 @@ service CliToHub {
     rpc CheckObjectCount(CheckObjectCountRequest) returns (CheckObjectCountReply) {}
     rpc CheckVersion(CheckVersionRequest) returns (CheckVersionReply) {}
     rpc CheckDiskUsage(CheckDiskUsageRequest) returns (CheckDiskUsageReply) {}
+    rpc PrepareInitCluster(PrepareInitClusterRequest) returns (PrepareInitClusterReply) {}
 }
 
 message PingRequest {
@@ -42,7 +43,7 @@ enum StepStatus {
 
 
 message CheckConfigRequest {
-	int32 dbPort = 1;
+    int32 dbPort = 1;
 }
 
 // Consider removing the status as errors are/should be put on the error field.
@@ -77,3 +78,8 @@ message CheckDiskUsageRequest {}
 message CheckDiskUsageReply {
     repeated string SegmentFileSysUsage = 1;
 }
+
+message PrepareInitClusterRequest {
+    int32 dbPort = 1;
+}
+message PrepareInitClusterReply {}

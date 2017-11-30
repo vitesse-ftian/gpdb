@@ -27,6 +27,7 @@ func main() {
 
 	var masterHost string
 	var dbPort int
+	var newClusterDbPort int
 
 	var cmdPrepare = &cobra.Command{
 		Use:   "prepare",
@@ -62,6 +63,34 @@ func main() {
 			}
 		},
 	}
+
+	var cmdPrepareSubInitCluster = &cobra.Command{
+		Use:   "init-cluster",
+		Short: "inits the cluster",
+		Long:  "Current assumptions is that the cluster already exists. And will only generate json config file for now.",
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			if newClusterDbPort == -1 {
+				return errors.New("the required flag '--port' was not specified")
+			}
+			return nil
+		},
+		Run: func(cmd *cobra.Command, args []string) {
+			//gpbackupUtils.InitializeLogging("gp_upgrade_cli", "")
+			conn, connConfigErr := grpc.Dial("localhost:"+hubPort, grpc.WithInsecure())
+			if connConfigErr != nil {
+				fmt.Println(connConfigErr)
+				os.Exit(1)
+			}
+			client := pb.NewCliToHubClient(conn)
+			preparer := commanders.NewPreparer(client)
+			err := preparer.InitCluster(newClusterDbPort)
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
+		},
+	}
+	cmdPrepareSubInitCluster.PersistentFlags().IntVar(&newClusterDbPort, "port", -1, "port for Greenplum on new master")
 
 	var cmdStatus = &cobra.Command{
 		Use:   "status",
@@ -200,6 +229,7 @@ func main() {
 
 	// prepare subcommmands
 	cmdPrepare.AddCommand(cmdPrepareSubStartHub)
+	cmdPrepare.AddCommand(cmdPrepareSubInitCluster)
 
 	// status subcommands
 	cmdStatus.AddCommand(cmdStatusSubUpgrade)

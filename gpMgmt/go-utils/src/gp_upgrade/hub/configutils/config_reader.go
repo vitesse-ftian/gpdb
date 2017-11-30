@@ -2,16 +2,34 @@ package configutils
 
 import (
 	"encoding/json"
-	"github.com/pkg/errors"
 	"io/ioutil"
+
+	"github.com/pkg/errors"
 )
 
 type Reader struct {
-	config SegmentConfiguration
+	config       SegmentConfiguration
+	fileLocation string
+}
+
+func NewReader() Reader {
+	return Reader{}
+}
+
+func (reader *Reader) OfOldClusterConfig() {
+	reader.fileLocation = GetConfigFilePath()
+}
+
+func (reader *Reader) OfNewClusterConfig() {
+	reader.fileLocation = GetNewClusterConfigFilePath()
 }
 
 func (reader *Reader) Read() error {
-	contents, err := ioutil.ReadFile(GetConfigFilePath())
+	if reader.fileLocation == "" {
+		return errors.New("Reader file location unknown")
+	}
+
+	contents, err := ioutil.ReadFile(reader.fileLocation)
 	if err != nil {
 		return errors.New(err.Error())
 	}

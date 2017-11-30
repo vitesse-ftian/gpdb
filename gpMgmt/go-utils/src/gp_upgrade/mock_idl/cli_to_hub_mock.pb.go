@@ -143,6 +143,24 @@ func (mr *MockCliToHubClientMockRecorder) CheckDiskUsage(ctx, in interface{}, op
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckDiskUsage", reflect.TypeOf((*MockCliToHubClient)(nil).CheckDiskUsage), varargs...)
 }
 
+// PrepareInitCluster mocks base method
+func (m *MockCliToHubClient) PrepareInitCluster(ctx context.Context, in *PrepareInitClusterRequest, opts ...grpc.CallOption) (*PrepareInitClusterReply, error) {
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "PrepareInitCluster", varargs...)
+	ret0, _ := ret[0].(*PrepareInitClusterReply)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// PrepareInitCluster indicates an expected call of PrepareInitCluster
+func (mr *MockCliToHubClientMockRecorder) PrepareInitCluster(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PrepareInitCluster", reflect.TypeOf((*MockCliToHubClient)(nil).PrepareInitCluster), varargs...)
+}
+
 // MockCliToHubServer is a mock of CliToHubServer interface
 type MockCliToHubServer struct {
 	ctrl     *gomock.Controller
@@ -242,4 +260,17 @@ func (m *MockCliToHubServer) CheckDiskUsage(arg0 context.Context, arg1 *CheckDis
 // CheckDiskUsage indicates an expected call of CheckDiskUsage
 func (mr *MockCliToHubServerMockRecorder) CheckDiskUsage(arg0, arg1 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckDiskUsage", reflect.TypeOf((*MockCliToHubServer)(nil).CheckDiskUsage), arg0, arg1)
+}
+
+// PrepareInitCluster mocks base method
+func (m *MockCliToHubServer) PrepareInitCluster(arg0 context.Context, arg1 *PrepareInitClusterRequest) (*PrepareInitClusterReply, error) {
+	ret := m.ctrl.Call(m, "PrepareInitCluster", arg0, arg1)
+	ret0, _ := ret[0].(*PrepareInitClusterReply)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// PrepareInitCluster indicates an expected call of PrepareInitCluster
+func (mr *MockCliToHubServerMockRecorder) PrepareInitCluster(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PrepareInitCluster", reflect.TypeOf((*MockCliToHubServer)(nil).PrepareInitCluster), arg0, arg1)
 }

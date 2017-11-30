@@ -55,6 +55,7 @@ var _ = Describe("check", func() {
 			testUtils.Check("cannot read file", err)
 
 			reader := configutils.Reader{}
+			reader.OfOldClusterConfig()
 			err = reader.Read()
 			testUtils.Check("cannot read config", err)
 
