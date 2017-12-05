@@ -75,6 +75,8 @@ coverage: build
 install : build
 	mkdir -p $(prefix)/bin
 	cp -p ../../bin/gp_upgrade $(prefix)/bin/
+	cp -p ../../bin/gp_upgrade_hub $(prefix)/bin/
+	cp -p ../../bin/gp_upgrade_agent $(prefix)/bin/
 
 clean:
 	rm -f ../../bin/gp_upgrade
