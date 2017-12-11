@@ -4,6 +4,7 @@ package services
 
 import (
 	"github.com/cloudfoundry/gosigar"
+	gpbackupUtils "github.com/greenplum-db/gpbackup/utils"
 	"golang.org/x/net/context"
 	pb "gp_upgrade/idl"
 	"gp_upgrade/utils"
@@ -22,6 +23,7 @@ func (s *commandListenerImpl) CheckUpgradeStatus(ctx context.Context, in *pb.Che
 
 	output, err := utils.System.ExecCmdOutput("bash", "-c", cmd)
 	if err != nil {
+		gpbackupUtils.GetLogger().Error(err.Error())
 		return nil, err
 	}
 	return &pb.CheckUpgradeStatusReply{ProcessList: string(output)}, nil
@@ -30,6 +32,7 @@ func (s *commandListenerImpl) CheckUpgradeStatus(ctx context.Context, in *pb.Che
 func (s *commandListenerImpl) CheckDiskUsageOnAgents(ctx context.Context, in *pb.CheckDiskUsageRequestToAgent) (*pb.CheckDiskUsageReplyFromAgent, error) {
 	diskUsage, err := s.getDiskUsage()
 	if err != nil {
+		gpbackupUtils.GetLogger().Error(err.Error())
 		return nil, err
 	}
 	var listDiskUsages []*pb.FileSysUsage
@@ -48,6 +51,7 @@ func diskUsage() (map[string]float64, error) {
 	fslist := sigar.FileSystemList{}
 	err := fslist.Get()
 	if err != nil {
+		gpbackupUtils.GetLogger().Error(err.Error())
 		return nil, err
 	}
 
@@ -58,6 +62,7 @@ func diskUsage() (map[string]float64, error) {
 
 		err = usage.Get(dirName)
 		if err != nil {
+			gpbackupUtils.GetLogger().Error(err.Error())
 			return nil, err
 		}
 

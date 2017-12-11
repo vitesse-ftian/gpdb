@@ -39,7 +39,7 @@ func main() {
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Do Stuff Here
-			gpbackupUtils.InitializeLogging("command listener", logdir)
+			gpbackupUtils.InitializeLogging("gp_upgrade_agent", logdir)
 			errorChannel := make(chan error)
 			defer close(errorChannel)
 			lis, err := net.Listen("tcp", port)

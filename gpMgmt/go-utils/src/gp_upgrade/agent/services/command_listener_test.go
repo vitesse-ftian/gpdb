@@ -8,12 +8,19 @@ import (
 	pb "gp_upgrade/idl"
 	"gp_upgrade/utils"
 
+	"github.com/greenplum-db/gpbackup/testutils"
+	"github.com/onsi/gomega/gbytes"
 	"github.com/pkg/errors"
 )
 
 var _ = Describe("CommandListener", func() {
 
+	var (
+		testLogFile *gbytes.Buffer
+	)
 	BeforeEach(func() {
+		_, _, _, testLogFile = testutils.SetupTestLogger()
+
 	})
 
 	AfterEach(func() {
@@ -39,6 +46,7 @@ var _ = Describe("CommandListener", func() {
 			resp, err := listener.CheckUpgradeStatus(context.TODO(), nil)
 			Expect(resp).To(BeNil())
 			Expect(err.Error()).To(Equal("couldn't find bash"))
+			Expect(string(testLogFile.Contents())).To(ContainSubstring("couldn't find bash"))
 		})
 	})
 	Describe("checking disk space", func() {
@@ -68,6 +76,7 @@ var _ = Describe("CommandListener", func() {
 			listener := &commandListenerImpl{getDiskUsage}
 			_, err := listener.CheckDiskUsageOnAgents(nil, &pb.CheckDiskUsageRequestToAgent{})
 			Expect(err).To(HaveOccurred())
+			Expect(string(testLogFile.Contents())).To(ContainSubstring("fake error"))
 		})
 	})
 })
