@@ -62,6 +62,7 @@ func ConvertMaster(pathToUpgradeWD string, oldBinDir string, newBinDir string) e
 	upgradeCommand.Stdout = f
 	upgradeCommand.Stderr = f
 
+	//TODO check the rc on this? keep a pid?
 	err = upgradeCommand.Start()
 	if err != nil {
 		gpbackupUtils.GetLogger().Error("An error occured: %v", err)

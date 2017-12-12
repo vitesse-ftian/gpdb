@@ -20,14 +20,14 @@ func NewConvertMaster(pgUpgradePath string) ConvertMaster {
 	return ConvertMaster{pgUpgradePath: pgUpgradePath}
 }
 
+/*
+ assumptions here are:
+	- pg_upgrade will not fail without error before writing an inprogress file
+	- when a new pg_upgrade is started it deletes all *.done and *.inprogress files
+*/
 func (c ConvertMaster) GetStatus() (*pb.UpgradeStepStatus, error) {
 	var masterUpgradeStatus *pb.UpgradeStepStatus
 	pgUpgradePath := c.pgUpgradePath
-
-	masterUpgradeStatusFailed := &pb.UpgradeStepStatus{
-		Step:   pb.UpgradeSteps_MASTERUPGRADE,
-		Status: pb.StepStatus_FAILED,
-	}
 
 	if _, err := utils.System.Stat(pgUpgradePath); utils.System.IsNotExist(err) {
 		gpbackupUtils.GetLogger().Info("setting status to PENDING")
@@ -38,13 +38,7 @@ func (c ConvertMaster) GetStatus() (*pb.UpgradeStepStatus, error) {
 		return masterUpgradeStatus, nil
 	}
 
-	inprogressFiles, err := utils.System.FilePathGlob(pgUpgradePath + "/*.inprogress")
-	if err != nil {
-		fmt.Println("err is: ", err)
-		return masterUpgradeStatusFailed, err
-	}
-
-	if inprogressFiles != nil {
+	if pgUpgradeRunning() {
 		gpbackupUtils.GetLogger().Info("setting status to RUNNING")
 		masterUpgradeStatus = &pb.UpgradeStepStatus{
 			Step:   pb.UpgradeSteps_MASTERUPGRADE,
@@ -52,23 +46,7 @@ func (c ConvertMaster) GetStatus() (*pb.UpgradeStepStatus, error) {
 		}
 		return masterUpgradeStatus, nil
 	}
-
-	doneFiles, doneErr := utils.System.FilePathGlob(pgUpgradePath + "/*.done")
-	if doneErr != nil {
-		fmt.Println("err is: ", err)
-		return masterUpgradeStatusFailed, doneErr
-	}
-
-	if doneFiles == nil {
-		gpbackupUtils.GetLogger().Info("setting status to RUNNING")
-		masterUpgradeStatus = &pb.UpgradeStepStatus{
-			Step:   pb.UpgradeSteps_MASTERUPGRADE,
-			Status: pb.StepStatus_RUNNING,
-		}
-		return masterUpgradeStatus, nil
-	}
-
-	if c.IsUpgradeComplete(doneFiles) {
+	if !inProgressFilesExist(pgUpgradePath) && c.IsUpgradeComplete(pgUpgradePath) {
 		gpbackupUtils.GetLogger().Info("setting status to COMPLETE")
 		masterUpgradeStatus = &pb.UpgradeStepStatus{
 			Step:   pb.UpgradeSteps_MASTERUPGRADE,
@@ -76,21 +54,41 @@ func (c ConvertMaster) GetStatus() (*pb.UpgradeStepStatus, error) {
 		}
 		return masterUpgradeStatus, nil
 	}
-
-	gpbackupUtils.GetLogger().Info("setting status to RUNNING")
+	gpbackupUtils.GetLogger().Info("setting status to FAILED")
 	masterUpgradeStatus = &pb.UpgradeStepStatus{
 		Step:   pb.UpgradeSteps_MASTERUPGRADE,
-		Status: pb.StepStatus_RUNNING,
+		Status: pb.StepStatus_FAILED,
 	}
-	return masterUpgradeStatus, nil
 
-	// TODO: look into the done file and figure out if the message "upgrade complete is there"?
-	// TODO: Do we need to consider checking if the process still exists?
-	// TODO: Check if the pg_upgrade process is done?
-	//
+	return masterUpgradeStatus, nil
 }
 
-func (c ConvertMaster) IsUpgradeComplete(doneFiles []string) bool {
+func pgUpgradeRunning() bool {
+	//if pgrep doesnt find target, ExecCmdOutput will return empty byte array and err.Error()="exit status 1"
+	pgUpgradePids, err := utils.System.ExecCmdOutput("pgrep", "pg_upgrade")
+	if err == nil && len(pgUpgradePids) != 0 {
+		return true
+	}
+	return false
+}
+
+func inProgressFilesExist(pgUpgradePath string) bool {
+	_, err := utils.System.FilePathGlob(pgUpgradePath + "/*.inprogress")
+	if err != nil {
+		gpbackupUtils.GetLogger().Error("err is: ", err)
+		return false
+	}
+	return true
+}
+
+func (c ConvertMaster) IsUpgradeComplete(pgUpgradePath string) bool {
+
+	doneFiles, doneErr := utils.System.FilePathGlob(pgUpgradePath + "/*.done")
+	if doneErr != nil {
+		fmt.Println("err is: ", doneErr)
+		return false
+	}
+
 	/* Get the latest done file
 	 * Parse and find the "upgrade complete" and return true.
 	 * otherwise, return false.

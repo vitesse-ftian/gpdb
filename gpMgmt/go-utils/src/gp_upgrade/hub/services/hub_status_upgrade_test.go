@@ -12,8 +12,8 @@ import (
 	. "github.com/onsi/gomega"
 
 	"gp_upgrade/hub/services"
+	"gp_upgrade/testUtils"
 	"io/ioutil"
-	"time"
 )
 
 var _ = Describe("hub", func() {
@@ -59,6 +59,9 @@ var _ = Describe("hub", func() {
 			utils.System.FilePathGlob = func(string) ([]string, error) {
 				return []string{"somefile.inprogress"}, nil
 			}
+			utils.System.ExecCmdOutput = func(cmd string, args ...string) ([]byte, error) {
+				return []byte("123"), nil
+			}
 
 			formulatedResponse, err := listener.StatusUpgrade(nil, fakeStatusUpgradeRequest)
 			Expect(err).To(BeNil())
@@ -80,16 +83,19 @@ var _ = Describe("hub", func() {
 			}
 			utils.System.FilePathGlob = func(glob string) ([]string, error) {
 				if strings.Contains(glob, "inprogress") {
-					return nil, nil
+					return nil, errors.New("fake error")
 				} else if strings.Contains(glob, "done") {
 					return []string{"found something"}, nil
 				}
 
 				return nil, errors.New("Test not configured for this glob.")
 			}
+			utils.System.ExecCmdOutput = func(cmd string, args ...string) ([]byte, error) {
+				return []byte(""), errors.New("bogus error")
+			}
 			utils.System.Stat = func(filename string) (os.FileInfo, error) {
 				if strings.Contains(filename, "found something") {
-					return &fakeFileInfo{}, nil
+					return &testUtils.FakeFileInfo{}, nil
 				}
 				return nil, nil
 			}
@@ -117,7 +123,47 @@ var _ = Describe("hub", func() {
 				}
 			}
 		})
+		It("reports pg_upgrade has failed", func() {
+			listener := services.NewCliToHubListener()
+			var fakeStatusUpgradeRequest *pb.StatusUpgradeRequest
 
+			utils.System.IsNotExist = func(error) bool {
+				return false
+			}
+			utils.System.FilePathGlob = func(glob string) ([]string, error) {
+				if strings.Contains(glob, "inprogress") {
+					return nil, errors.New("fake error")
+				} else if strings.Contains(glob, "done") {
+					return []string{"found something"}, nil
+				}
+
+				return nil, errors.New("Test not configured for this glob.")
+			}
+			utils.System.ExecCmdOutput = func(cmd string, args ...string) ([]byte, error) {
+				return []byte(""), errors.New("bogus error")
+			}
+			utils.System.Open = func(name string) (*os.File, error) {
+				// Temporarily create a file that we can read as a real file descriptor
+				fd, err := ioutil.TempFile("/tmp", "hub_status_upgrade_test")
+				Expect(err).To(BeNil())
+
+				filename := fd.Name()
+				fd.WriteString("12312312;Upgrade failed;\n")
+				fd.Close()
+				return os.Open(filename)
+
+			}
+			formulatedResponse, err := listener.StatusUpgrade(nil, fakeStatusUpgradeRequest)
+			Expect(err).To(BeNil())
+
+			stepStatuses := formulatedResponse.GetListOfUpgradeStepStatuses()
+
+			for _, stepStatus := range stepStatuses {
+				if stepStatus.GetStep() == pb.UpgradeSteps_MASTERUPGRADE {
+					Expect(stepStatus.GetStatus()).To(Equal(pb.StepStatus_FAILED))
+				}
+			}
+		})
 	})
 	Describe("Status of PrepareNewClusterConfig", func() {
 		AfterEach(func() {
@@ -148,33 +194,3 @@ var _ = Describe("hub", func() {
 
 	})
 })
-
-type fakeFileInfo struct {
-	name    string      // base name of the file
-	size    int64       // length in bytes for regular files; system-dependent for others
-	mode    os.FileMode // file mode bits
-	modTime time.Time   // modification time
-	isDir   bool        // abbreviation for Mode().IsDir()
-	sys     interface{}
-}
-
-func (f fakeFileInfo) Name() string {
-	return f.name
-}
-
-func (f fakeFileInfo) Size() int64 {
-	return f.size
-}
-func (f fakeFileInfo) Mode() os.FileMode {
-	return f.mode
-}
-func (f fakeFileInfo) ModTime() time.Time {
-	return f.modTime
-}
-func (f fakeFileInfo) IsDir() bool {
-	return f.isDir
-}
-
-func (f fakeFileInfo) Sys() interface{} {
-	return nil
-}
