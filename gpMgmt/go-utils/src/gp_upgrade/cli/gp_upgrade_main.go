@@ -41,17 +41,16 @@ func main() {
 		Short: "starts the hub",
 		Long:  "starts the hub",
 		Run: func(cmd *cobra.Command, args []string) {
-			gpbackupUtils.InitializeLogging("gp_upgrade_cli", "")
 			preparer := commanders.Preparer{}
 			err := preparer.StartHub()
 			if err != nil {
-				fmt.Println(err)
+				gpbackupUtils.GetLogger().Error(err.Error())
 				os.Exit(1)
 			}
 
 			conn, connConfigErr := grpc.Dial("localhost:"+hubPort, grpc.WithInsecure())
 			if connConfigErr != nil {
-				fmt.Println(connConfigErr)
+				gpbackupUtils.GetLogger().Error(connConfigErr.Error())
 				os.Exit(1)
 			}
 			client := pb.NewCliToHubClient(conn)
@@ -76,17 +75,16 @@ func main() {
 			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
-			//gpbackupUtils.InitializeLogging("gp_upgrade_cli", "")
 			conn, connConfigErr := grpc.Dial("localhost:"+hubPort, grpc.WithInsecure())
 			if connConfigErr != nil {
-				fmt.Println(connConfigErr)
+				gpbackupUtils.GetLogger().Error(connConfigErr.Error())
 				os.Exit(1)
 			}
 			client := pb.NewCliToHubClient(conn)
 			preparer := commanders.NewPreparer(client)
 			err := preparer.InitCluster(newClusterDbPort)
 			if err != nil {
-				fmt.Println(err)
+				gpbackupUtils.GetLogger().Error(err.Error())
 				os.Exit(1)
 			}
 		},
@@ -104,18 +102,16 @@ func main() {
 		Short: "the status of the upgrade",
 		Long:  "the status of the upgrade",
 		Run: func(cmd *cobra.Command, args []string) {
-			gpbackupUtils.InitializeLogging("gp_upgrade_cli", "")
-
 			conn, connConfigErr := grpc.Dial("localhost:"+hubPort, grpc.WithInsecure())
 			if connConfigErr != nil {
-				fmt.Println(connConfigErr)
+				gpbackupUtils.GetLogger().Error(connConfigErr.Error())
 				os.Exit(1)
 			}
 			client := pb.NewCliToHubClient(conn)
 			reporter := commanders.NewReporter(client)
 			err := reporter.OverallUpgradeStatus()
 			if err != nil {
-				fmt.Println(err)
+				gpbackupUtils.GetLogger().Error(err.Error())
 				os.Exit(1)
 			}
 		},
@@ -147,7 +143,7 @@ func main() {
 			conn, connConfigErr := grpc.Dial("localhost:"+hubPort,
 				grpc.WithInsecure())
 			if connConfigErr != nil {
-				fmt.Println(connConfigErr)
+				gpbackupUtils.GetLogger().Error(connConfigErr.Error())
 				os.Exit(1)
 			}
 			client := pb.NewCliToHubClient(conn)
@@ -181,7 +177,7 @@ func main() {
 			conn, connConfigErr := grpc.Dial("localhost:"+hubPort,
 				grpc.WithInsecure())
 			if connConfigErr != nil {
-				fmt.Println(connConfigErr)
+				gpbackupUtils.GetLogger().Error(connConfigErr.Error())
 				os.Exit(1)
 			}
 			client := pb.NewCliToHubClient(conn)
@@ -197,13 +193,13 @@ func main() {
 			conn, connConfigErr := grpc.Dial("localhost:"+hubPort,
 				grpc.WithInsecure())
 			if connConfigErr != nil {
-				fmt.Println(connConfigErr)
+				gpbackupUtils.GetLogger().Error(connConfigErr.Error())
 				os.Exit(1)
 			}
 			client := pb.NewCliToHubClient(conn)
 			err := commanders.NewConfigChecker(client).Execute(dbPort)
 			if err != nil {
-				fmt.Println(err)
+				gpbackupUtils.GetLogger().Error(err.Error())
 				os.Exit(1)
 			}
 		},
@@ -232,14 +228,14 @@ func main() {
 			conn, connConfigErr := grpc.Dial("localhost:"+hubPort,
 				grpc.WithInsecure())
 			if connConfigErr != nil {
-				fmt.Println(connConfigErr)
+				gpbackupUtils.GetLogger().Error(connConfigErr.Error())
 				os.Exit(1)
 			}
 
 			client := pb.NewCliToHubClient(conn)
 			err := commanders.NewUpgrader(client).ConvertMaster(oldDataDir, oldBinDir, newDataDir, newBinDir)
 			if err != nil {
-				fmt.Println(err)
+				gpbackupUtils.GetLogger().Error(err.Error())
 				os.Exit(1)
 			}
 		},

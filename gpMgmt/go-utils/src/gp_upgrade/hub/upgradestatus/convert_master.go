@@ -5,7 +5,6 @@ import (
 	"gp_upgrade/utils"
 
 	"bufio"
-	"fmt"
 	gpbackupUtils "github.com/greenplum-db/gpbackup/utils"
 	"io"
 	"os"
@@ -85,7 +84,7 @@ func (c ConvertMaster) IsUpgradeComplete(pgUpgradePath string) bool {
 
 	doneFiles, doneErr := utils.System.FilePathGlob(pgUpgradePath + "/*.done")
 	if doneErr != nil {
-		fmt.Println("err is: ", doneErr)
+		gpbackupUtils.GetLogger().Error(doneErr.Error())
 		return false
 	}
 
@@ -97,7 +96,6 @@ func (c ConvertMaster) IsUpgradeComplete(pgUpgradePath string) bool {
 	latestDoneFile := doneFiles[0]
 	fi, err := utils.System.Stat(latestDoneFile)
 	if err != nil {
-		fmt.Println(err)
 		gpbackupUtils.GetLogger().Error("IsUpgradeComplete: %v", err)
 		return false
 	}
@@ -119,7 +117,7 @@ func (c ConvertMaster) IsUpgradeComplete(pgUpgradePath string) bool {
 
 	f, err := utils.System.Open(latestDoneFile)
 	if err != nil {
-		fmt.Println(err)
+		gpbackupUtils.GetLogger().Error(err.Error())
 	}
 	defer f.Close()
 	r := bufio.NewReader(f)

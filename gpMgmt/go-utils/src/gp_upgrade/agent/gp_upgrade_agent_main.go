@@ -3,7 +3,6 @@ package main
 import (
 	"os"
 
-	"fmt"
 	gpbackupUtils "github.com/greenplum-db/gpbackup/utils"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -73,7 +72,7 @@ func main() {
 	RootCmd.PersistentFlags().StringVar(&logdir, "log-directory", "", "command_listener log directory")
 
 	if err := RootCmd.Execute(); err != nil {
-		fmt.Println(err)
+		gpbackupUtils.GetLogger().Error(err.Error())
 		os.Exit(1)
 	}
 }

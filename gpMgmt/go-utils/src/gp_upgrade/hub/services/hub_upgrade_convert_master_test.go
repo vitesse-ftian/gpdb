@@ -30,9 +30,6 @@ func TestHelperProcess(t *testing.T) {
 		mockedExitStatus = -1
 	}
 	defer os.Exit(mockedExitStatus)
-	// println("Mocked Data:", mockedDate)
-	//fmt.Println("I mocked the exec command?!")
-	//fmt.Fprintf(os.Stdout, "I mocked the exec command?!\n")
 	fmt.Fprintf(os.Stdout, mockedOutput)
 }
 

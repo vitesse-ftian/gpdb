@@ -108,7 +108,6 @@ func waitForSocketToAllowConnections() {
 		session, err := connector.Connect("localhost", 2022, "pivotal")
 		if err == nil {
 			session.Close()
-			//fmt.Println("success during waitForSocketToAllowConnections")
 			break
 		}
 

@@ -9,7 +9,6 @@ import (
 
 	pb "gp_upgrade/idl"
 
-	"fmt"
 	gpbackupUtils "github.com/greenplum-db/gpbackup/utils"
 	"github.com/spf13/cobra"
 	"os"
@@ -66,7 +65,7 @@ func main() {
 	RootCmd.PersistentFlags().StringVar(&logdir, "log-directory", "", "gp_upgrade_hub log directory")
 
 	if err := RootCmd.Execute(); err != nil {
-		fmt.Println(err)
+		gpbackupUtils.GetLogger().Error(err.Error())
 		os.Exit(1)
 	}
 
