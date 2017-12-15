@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"gp_upgrade/hub/configutils"
 	pb "gp_upgrade/idl"
+	"gp_upgrade/utils"
+
 	"os"
-	"os/exec"
 	"path/filepath"
 
 	gpbackupUtils "github.com/greenplum-db/gpbackup/utils"
@@ -14,7 +15,6 @@ import (
 )
 
 var (
-	ExecCommand       = exec.Command // TODO: Probably put this to utils.System
 	GetMasterDataDirs = getMasterDataDirs
 )
 
@@ -56,7 +56,7 @@ func ConvertMaster(pathToUpgradeWD string, oldBinDir string, newBinDir string) e
 		pathToUpgradeWD, newBinDir+"/pg_upgrade", oldBinDir, oldMasterDataDir, newBinDir, newMasterDataDir)
 
 	//export ENV VARS instead of passing on cmd line?
-	upgradeCommand := ExecCommand("bash", "-c", upgradeCmdArgs)
+	upgradeCommand := utils.System.ExecCommand("bash", "-c", upgradeCmdArgs)
 
 	// redirect both stdout and stderr to the log file
 	upgradeCommand.Stdout = f

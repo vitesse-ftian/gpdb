@@ -3,6 +3,8 @@ package services_test
 import (
 	"fmt"
 	"gp_upgrade/hub/services"
+	"gp_upgrade/utils"
+
 	pb "gp_upgrade/idl"
 	"os"
 	"os/exec"
@@ -14,6 +16,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
+	"gp_upgrade/hub/logger"
 )
 
 // TestHelperProcess isn't a real test. It's used as a helper process
@@ -67,13 +70,13 @@ var _ bool = Describe("hub", func() {
 	Some pg_upgrade output here
 	Passed through all of pg_upgrade`
 
-			listener := services.NewCliToHubListener()
-			services.ExecCommand = fakeExecCommand
+			listener := services.NewCliToHubListener(logger.LogEntry{}, nil)
+			utils.System.ExecCommand = fakeExecCommand
 			services.GetMasterDataDirs = func() (string, string, error) {
 				return "old/datadirectory/path", "new/datadirectory/path", nil
 			}
 
-			defer func() { services.ExecCommand = exec.Command }()
+			defer func() { utils.System.ExecCommand = exec.Command }()
 
 			fakeUpgradeConvertMasterRequest := &pb.UpgradeConvertMasterRequest{
 				OldBinDir: "/old/path/bin",
@@ -95,9 +98,9 @@ var _ bool = Describe("hub", func() {
 	Some kind of error message here that helps us understand what's going on
 	Some kind of obscure error message`
 
-			listener := services.NewCliToHubListener()
-			services.ExecCommand = fakeExecCommand
-			defer func() { services.ExecCommand = exec.Command }()
+			listener := services.NewCliToHubListener(logger.LogEntry{}, nil)
+			utils.System.ExecCommand = fakeExecCommand
+			defer func() { utils.System.ExecCommand = exec.Command }()
 
 			fakeUpgradeConvertMasterRequest := &pb.UpgradeConvertMasterRequest{
 				OldBinDir: "/old/path/bin",

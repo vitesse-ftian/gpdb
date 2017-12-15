@@ -23,6 +23,16 @@ func NewPreparer(client pb.CliToHubClient) Preparer {
 
 var NumberOfConnectionAttempt = 100
 
+func (p Preparer) ShutdownClusters(oldBinDir string, newBinDir string) error {
+	_, err := p.client.PrepareShutdownClusters(context.Background(),
+		&pb.PrepareShutdownClustersRequest{OldBinDir: oldBinDir, NewBinDir: newBinDir})
+	if err != nil {
+		gpbackupUtils.GetLogger().Error(err.Error())
+	}
+	gpbackupUtils.GetLogger().Info("request to shutdown clusters sent to hub")
+	return nil
+}
+
 func (p Preparer) StartHub() error {
 	logger := gpbackupUtils.GetLogger()
 

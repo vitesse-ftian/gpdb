@@ -64,6 +64,37 @@ func main() {
 		},
 	}
 
+	var cmdPrepareSubShutdownClusters = &cobra.Command{
+		Use:   "shutdown-clusters",
+		Short: "shuts down both old and new cluster",
+		Long:  "Current assumptions is both clusters exist.",
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			if oldBinDir == "" {
+				return errors.New("the required flag '--old-bindir' was not specified")
+			}
+			if newBinDir == "" {
+				return errors.New("the required flag '--new-bindir' was not specified")
+			}
+			return nil
+		},
+		Run: func(cmd *cobra.Command, args []string) {
+			conn, connConfigErr := grpc.Dial("localhost:"+hubPort, grpc.WithInsecure())
+			if connConfigErr != nil {
+				gpbackupUtils.GetLogger().Error(connConfigErr.Error())
+				os.Exit(1)
+			}
+			client := pb.NewCliToHubClient(conn)
+			preparer := commanders.NewPreparer(client)
+			err := preparer.ShutdownClusters(oldBinDir, newBinDir)
+			if err != nil {
+				gpbackupUtils.GetLogger().Error(err.Error())
+				os.Exit(1)
+			}
+		},
+	}
+	cmdPrepareSubShutdownClusters.PersistentFlags().StringVar(&oldBinDir, "old-bindir", "", "install directory for old gpdb version")
+	cmdPrepareSubShutdownClusters.PersistentFlags().StringVar(&newBinDir, "new-bindir", "", "install directory for new gpdb version")
+
 	var cmdPrepareSubInitCluster = &cobra.Command{
 		Use:   "init-cluster",
 		Short: "inits the cluster",
@@ -254,6 +285,7 @@ func main() {
 	// prepare subcommmands
 	cmdPrepare.AddCommand(cmdPrepareSubStartHub)
 	cmdPrepare.AddCommand(cmdPrepareSubInitCluster)
+	cmdPrepare.AddCommand(cmdPrepareSubShutdownClusters)
 
 	// status subcommands
 	cmdStatus.AddCommand(cmdStatusSubUpgrade)

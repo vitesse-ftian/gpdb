@@ -10,6 +10,7 @@ service CliToHub {
     rpc CheckVersion(CheckVersionRequest) returns (CheckVersionReply) {}
     rpc CheckDiskUsage(CheckDiskUsageRequest) returns (CheckDiskUsageReply) {}
     rpc PrepareInitCluster(PrepareInitClusterRequest) returns (PrepareInitClusterReply) {}
+    rpc PrepareShutdownClusters(PrepareShutdownClustersRequest) returns (PrepareShutdownClustersReply) {}
     rpc UpgradeConvertMaster(UpgradeConvertMasterRequest) returns (UpgradeConvertMasterReply) {}
 }
 
@@ -81,6 +82,12 @@ message CheckDiskUsageRequest {}
 message CheckDiskUsageReply {
     repeated string SegmentFileSysUsage = 1;
 }
+
+message PrepareShutdownClustersRequest {
+    string oldBinDir = 1;
+    string newBinDir = 2;
+}
+message PrepareShutdownClustersReply {}
 
 message PrepareInitClusterRequest {
     int32 dbPort = 1;

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"gp_upgrade/hub/cluster"
 	"gp_upgrade/hub/services"
 	"net"
 
@@ -9,8 +10,10 @@ import (
 
 	pb "gp_upgrade/idl"
 
+	"fmt"
 	gpbackupUtils "github.com/greenplum-db/gpbackup/utils"
 	"github.com/spf13/cobra"
+	hubLogger "gp_upgrade/hub/logger"
 	"os"
 	"runtime/debug"
 )
@@ -39,8 +42,10 @@ func main() {
 				logger.Fatal(err, "failed to listen")
 			}
 
+			channelLogger := hubLogger.LogEntry{Info: make(chan string), Error: make(chan string), Done: make(chan bool)}
 			server := grpc.NewServer()
-			myImpl := services.NewCliToHubListener()
+			clusterPair := cluster.Pair{}
+			myImpl := services.NewCliToHubListener(channelLogger, &clusterPair)
 			pb.RegisterCliToHubServer(server, myImpl)
 			reflection.Register(server)
 			go func(myListener net.Listener) {
@@ -51,6 +56,18 @@ func main() {
 
 				close(errorChannel)
 			}(lis)
+
+			go func(channelLogger hubLogger.LogEntry) {
+				for {
+					select {
+					case infoMsg := <-channelLogger.Info:
+						gpbackupUtils.GetLogger().Info(infoMsg)
+					case errorMsg := <-channelLogger.Error:
+						fmt.Println("got error log")
+						gpbackupUtils.GetLogger().Error(errorMsg)
+					}
+				}
+			}(channelLogger)
 
 			select {
 			case err := <-errorChannel:

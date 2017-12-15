@@ -2,9 +2,8 @@ package configutils
 
 import (
 	"encoding/json"
-	"io/ioutil"
-
 	"github.com/pkg/errors"
+	"gp_upgrade/utils"
 )
 
 type Reader struct {
@@ -29,7 +28,8 @@ func (reader *Reader) Read() error {
 		return errors.New("Reader file location unknown")
 	}
 
-	contents, err := ioutil.ReadFile(reader.fileLocation)
+	contents, err := utils.System.ReadFile(reader.fileLocation)
+
 	if err != nil {
 		return errors.New(err.Error())
 	}

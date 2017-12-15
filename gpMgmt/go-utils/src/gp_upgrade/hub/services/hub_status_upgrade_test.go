@@ -11,6 +11,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	"gp_upgrade/hub/logger"
 	"gp_upgrade/hub/services"
 	"gp_upgrade/testUtils"
 	"io/ioutil"
@@ -22,7 +23,7 @@ var _ = Describe("hub", func() {
 	})
 	Describe("creates a reply", func() {
 		It("sends status messages under good condition", func() {
-			listener := services.NewCliToHubListener()
+			listener := services.NewCliToHubListener(logger.LogEntry{}, nil)
 			var fakeStatusUpgradeRequest *pb.StatusUpgradeRequest
 			formulatedResponse, err := listener.StatusUpgrade(nil, fakeStatusUpgradeRequest)
 			Expect(err).To(BeNil())
@@ -31,7 +32,7 @@ var _ = Describe("hub", func() {
 		})
 
 		It("reports that master upgrade is pending when pg_upgrade dir does not exist", func() {
-			listener := services.NewCliToHubListener()
+			listener := services.NewCliToHubListener(logger.LogEntry{}, nil)
 			var fakeStatusUpgradeRequest *pb.StatusUpgradeRequest
 
 			utils.System.IsNotExist = func(error) bool {
@@ -50,7 +51,7 @@ var _ = Describe("hub", func() {
 			}
 		})
 		It("reports that master upgrade is running when pg_upgrade/*.inprogress files exists", func() {
-			listener := services.NewCliToHubListener()
+			listener := services.NewCliToHubListener(logger.LogEntry{}, nil)
 			var fakeStatusUpgradeRequest *pb.StatusUpgradeRequest
 
 			utils.System.IsNotExist = func(error) bool {
@@ -75,7 +76,7 @@ var _ = Describe("hub", func() {
 			}
 		})
 		It("reports that master upgrade is done when no *.inprogress files exist in ~/.gp_upgrade/pg_upgrade", func() {
-			listener := services.NewCliToHubListener()
+			listener := services.NewCliToHubListener(logger.LogEntry{}, nil)
 			var fakeStatusUpgradeRequest *pb.StatusUpgradeRequest
 
 			utils.System.IsNotExist = func(error) bool {
@@ -124,7 +125,7 @@ var _ = Describe("hub", func() {
 			}
 		})
 		It("reports pg_upgrade has failed", func() {
-			listener := services.NewCliToHubListener()
+			listener := services.NewCliToHubListener(logger.LogEntry{}, nil)
 			var fakeStatusUpgradeRequest *pb.StatusUpgradeRequest
 
 			utils.System.IsNotExist = func(error) bool {

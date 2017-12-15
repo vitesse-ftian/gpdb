@@ -90,4 +90,18 @@ var _ = Describe("preparer", func() {
 			Eventually(testStdout).Should(gbytes.Say("Gleaning the new cluster config"))
 		})
 	})
+	Describe("PrepareShutdownCluster", func() {
+		It("returns successfully", func() {
+			_, testStdout, _, _ := testutils.SetupTestLogger()
+
+			client.EXPECT().PrepareShutdownClusters(
+				gomock.Any(),
+				&pb.PrepareShutdownClustersRequest{OldBinDir: "/old", NewBinDir: "/new"},
+			).Return(&pb.PrepareShutdownClustersReply{}, nil)
+			preparer := commanders.NewPreparer(client)
+			err := preparer.ShutdownClusters("/old", "/new")
+			Expect(err).To(BeNil())
+			Eventually(testStdout).Should(gbytes.Say("request to shutdown clusters sent to hub"))
+		})
+	})
 })

@@ -161,6 +161,24 @@ func (mr *MockCliToHubClientMockRecorder) PrepareInitCluster(ctx, in interface{}
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PrepareInitCluster", reflect.TypeOf((*MockCliToHubClient)(nil).PrepareInitCluster), varargs...)
 }
 
+// PrepareShutdownClusters mocks base method
+func (m *MockCliToHubClient) PrepareShutdownClusters(ctx context.Context, in *PrepareShutdownClustersRequest, opts ...grpc.CallOption) (*PrepareShutdownClustersReply, error) {
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "PrepareShutdownClusters", varargs...)
+	ret0, _ := ret[0].(*PrepareShutdownClustersReply)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// PrepareShutdownClusters indicates an expected call of PrepareShutdownClusters
+func (mr *MockCliToHubClientMockRecorder) PrepareShutdownClusters(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PrepareShutdownClusters", reflect.TypeOf((*MockCliToHubClient)(nil).PrepareShutdownClusters), varargs...)
+}
+
 // UpgradeConvertMaster mocks base method
 func (m *MockCliToHubClient) UpgradeConvertMaster(ctx context.Context, in *UpgradeConvertMasterRequest, opts ...grpc.CallOption) (*UpgradeConvertMasterReply, error) {
 	varargs := []interface{}{ctx, in}
@@ -291,6 +309,19 @@ func (m *MockCliToHubServer) PrepareInitCluster(arg0 context.Context, arg1 *Prep
 // PrepareInitCluster indicates an expected call of PrepareInitCluster
 func (mr *MockCliToHubServerMockRecorder) PrepareInitCluster(arg0, arg1 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PrepareInitCluster", reflect.TypeOf((*MockCliToHubServer)(nil).PrepareInitCluster), arg0, arg1)
+}
+
+// PrepareShutdownClusters mocks base method
+func (m *MockCliToHubServer) PrepareShutdownClusters(arg0 context.Context, arg1 *PrepareShutdownClustersRequest) (*PrepareShutdownClustersReply, error) {
+	ret := m.ctrl.Call(m, "PrepareShutdownClusters", arg0, arg1)
+	ret0, _ := ret[0].(*PrepareShutdownClustersReply)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// PrepareShutdownClusters indicates an expected call of PrepareShutdownClusters
+func (mr *MockCliToHubServerMockRecorder) PrepareShutdownClusters(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PrepareShutdownClusters", reflect.TypeOf((*MockCliToHubServer)(nil).PrepareShutdownClusters), arg0, arg1)
 }
 
 // UpgradeConvertMaster mocks base method

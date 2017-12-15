@@ -39,6 +39,7 @@ var _ = Describe("configutils reader", func() {
 	})
 
 	AfterEach(func() {
+
 		os.Setenv("HOME", saved_old_home)
 	})
 
