@@ -4,7 +4,6 @@ import (
 	"errors"
 	"gp_upgrade/cli/commanders"
 	mockpb "gp_upgrade/mock_idl"
-	"testing"
 
 	pb "gp_upgrade/idl"
 
@@ -19,12 +18,11 @@ var _ = Describe("reporter", func() {
 
 	var (
 		client *mockpb.MockCliToHubClient
-		t      *testing.T
 		ctrl   *gomock.Controller
 	)
 
 	BeforeEach(func() {
-		ctrl = gomock.NewController(t)
+		ctrl = gomock.NewController(GinkgoT())
 		client = mockpb.NewMockCliToHubClient(ctrl)
 	})
 

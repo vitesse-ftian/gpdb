@@ -3,7 +3,9 @@ package services_test
 import (
 	pb "gp_upgrade/idl"
 	mockpb "gp_upgrade/mock_idl"
-	"testing"
+
+	"gp_upgrade/hub/configutils"
+	"gp_upgrade/hub/services"
 
 	"github.com/golang/mock/gomock"
 	"github.com/greenplum-db/gpbackup/testutils"
@@ -11,21 +13,18 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
 	"github.com/pkg/errors"
-	"gp_upgrade/hub/configutils"
-	"gp_upgrade/hub/services"
 )
 
 var _ = Describe("object count tests", func() {
 	var (
 		client      *mockpb.MockCommandListenerClient
-		t           *testing.T
 		ctrl        *gomock.Controller
 		testLogFile *gbytes.Buffer
 	)
 
 	BeforeEach(func() {
 		testutils.SetupTestLogger()
-		ctrl = gomock.NewController(t)
+		ctrl = gomock.NewController(GinkgoT())
 		client = mockpb.NewMockCommandListenerClient(ctrl)
 		_, _, _, testLogFile = testutils.SetupTestLogger()
 	})
