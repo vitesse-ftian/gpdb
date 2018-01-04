@@ -82,7 +82,7 @@ upgrade_qd()
 
 gp_upgrade_new_cluster_preparation()
 {
-  sleep 5 #making sure it's up
+  sleep 10 #making sure it's up
   gp_upgrade prepare init-cluster --port $MASTER_DEMO_PORT #The port flag will get removed later on
 }
 
@@ -125,6 +125,13 @@ wait_for_qd_upgrade_to_finish()
   # We say that it's complete even though the pg_upgrade is still doing some
   # kind of verification.
   #sleep 10
+}
+
+wait_stop_clusters()
+{
+# There should be something here that ensures that the stop command finished
+# This is where we should be checking the `gp_upgrade status upgrade to see if that stop finished.
+sleep 30
 }
 
 upgrade_segment()
@@ -225,8 +232,6 @@ pkill gp_upgrade_hub
 gp_upgrade prepare start-hub
 gp_upgrade check config
 
-gpstop -a
-
 # Create a new gpdemo cluster in the temproot. Using the old datadir for the
 # path to demo_cluster.sh is a bit of a hack, but since this test relies on
 # gpdemo having been used for ICW it will do for now.
@@ -244,7 +249,11 @@ export PGPORT=17432
 
 gp_upgrade_new_cluster_preparation
 
-gpstop -ai
+stop_command="gp_upgrade prepare shutdown-clusters --old-bindir=$OLD_BINDIR --new-bindir=$NEW_BINDIR"
+echo "STOP COMMAND: $stop_command"
+$stop_command
+wait_stop_clusters
+
 MASTER_DATA_DIRECTORY=""; unset MASTER_DATA_DIRECTORY
 PGPORT=""; unset PGPORT
 PGOPTIONS=""; unset PGOPTIONS
