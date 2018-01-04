@@ -5,10 +5,11 @@ import (
 	"gp_upgrade/utils"
 
 	"bufio"
-	gpbackupUtils "github.com/greenplum-db/gpbackup/utils"
 	"io"
 	"os"
 	"regexp"
+
+	gpbackupUtils "github.com/greenplum-db/gpbackup/utils"
 )
 
 type ConvertMaster struct {
@@ -72,17 +73,26 @@ func pgUpgradeRunning() bool {
 }
 
 func inProgressFilesExist(pgUpgradePath string) bool {
-	_, err := utils.System.FilePathGlob(pgUpgradePath + "/*.inprogress")
+	files, err := utils.System.FilePathGlob(pgUpgradePath + "/*.inprogress")
+	if files == nil {
+		return false
+	}
+
 	if err != nil {
 		gpbackupUtils.GetLogger().Error("err is: ", err)
 		return false
 	}
+
 	return true
 }
 
 func (c ConvertMaster) IsUpgradeComplete(pgUpgradePath string) bool {
 
 	doneFiles, doneErr := utils.System.FilePathGlob(pgUpgradePath + "/*.done")
+	if doneFiles == nil {
+		return false
+	}
+
 	if doneErr != nil {
 		gpbackupUtils.GetLogger().Error(doneErr.Error())
 		return false

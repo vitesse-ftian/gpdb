@@ -1,19 +1,21 @@
 package upgradestatus_test
 
 import (
-	"github.com/greenplum-db/gpbackup/testutils"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 	"os"
 	"path/filepath"
 
-	"github.com/pkg/errors"
+	"github.com/greenplum-db/gpbackup/testutils"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+
 	"gp_upgrade/hub/upgradestatus"
 	pb "gp_upgrade/idl"
 	"gp_upgrade/testUtils"
 	"gp_upgrade/utils"
 	"io/ioutil"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 var _ bool = Describe("hub", func() {
