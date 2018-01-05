@@ -194,4 +194,27 @@ var _ = Describe("hub", func() {
 		})
 
 	})
+	Describe("Status of ShutdownClusters", func() {
+		AfterEach(func() {
+			//any mocking of utils.System function pointers should be reset by calling InitializeSystemFunctions
+			utils.System = utils.InitializeSystemFunctions()
+		})
+		It("We're sending the status of shutdown clusters", func() {
+
+			listener := services.NewCliToHubListener(logger.LogEntry{}, nil)
+			var fakeStatusUpgradeRequest *pb.StatusUpgradeRequest
+			formulatedResponse, err := listener.StatusUpgrade(nil, fakeStatusUpgradeRequest)
+			Expect(err).To(BeNil())
+			countOfStatuses := len(formulatedResponse.GetListOfUpgradeStepStatuses())
+			Expect(countOfStatuses).ToNot(BeZero())
+			found := false
+			for _, v := range formulatedResponse.GetListOfUpgradeStepStatuses() {
+				if pb.UpgradeSteps_STOPPED_CLUSTER == v.Step {
+					found = true
+				}
+			}
+			Expect(found).To(Equal(true))
+		})
+
+	})
 })

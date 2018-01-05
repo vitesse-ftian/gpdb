@@ -19,6 +19,7 @@ var UpgradeStepsMessage = map[pb.UpgradeSteps]string{
 	pb.UpgradeSteps_SEGINSTALL:           "- Install binaries on segments",
 	pb.UpgradeSteps_PREPARE_INIT_CLUSTER: "- Initialize upgrade target cluster",
 	pb.UpgradeSteps_MASTERUPGRADE:        "- Run pg_upgrade on master",
+	pb.UpgradeSteps_STOPPED_CLUSTER:      "- Shutdown clusters",
 }
 
 func NewReporter(client pb.CliToHubClient) Reporter {
@@ -41,7 +42,6 @@ func (r *Reporter) OverallUpgradeStatus() error {
 	}
 
 	logger.Info("PENDING - Validate compatible versions for upgrade")
-	logger.Info("PENDING - Shutdown cluster")
 	logger.Info("PENDING - Master server upgrade")
 	logger.Info("PENDING - Master OID file shared with segments")
 	logger.Info("PENDING - Primary segment upgrade")

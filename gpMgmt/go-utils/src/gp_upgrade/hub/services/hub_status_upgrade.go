@@ -29,13 +29,18 @@ func (s *cliToHubListenerImpl) StatusUpgrade(ctx context.Context, in *pb.StatusU
 	if homeDirectory == "" {
 		return nil, errors.New("Could not find the HOME environment")
 	}
+
+	gpstopStatePath := filepath.Join(homeDirectory, ".gp_upgrade/gpstop")
+	clusterPair := upgradestatus.NewShutDownClusters(gpstopStatePath)
+
 	pgUpgradePath := filepath.Join(homeDirectory, ".gp_upgrade/pg_upgrade")
 	convertMaster := upgradestatus.NewConvertMaster(pgUpgradePath)
 
+	shutdownClustersStatus, _ := clusterPair.GetStatus()
 	masterUpgradeStatus, _ := convertMaster.GetStatus()
 
 	reply := &pb.StatusUpgradeReply{}
-	reply.ListOfUpgradeStepStatuses = append(reply.ListOfUpgradeStepStatuses, demoStepStatus, demoSeginstallStatus, prepareInitStatus, masterUpgradeStatus)
+	reply.ListOfUpgradeStepStatuses = append(reply.ListOfUpgradeStepStatuses, demoStepStatus, demoSeginstallStatus, prepareInitStatus, shutdownClustersStatus, masterUpgradeStatus)
 	return reply, nil
 }
 
