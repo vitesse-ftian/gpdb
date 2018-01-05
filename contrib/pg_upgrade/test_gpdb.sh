@@ -12,7 +12,7 @@
 unset PGHOST
 
 OLD_BINDIR=/usr/local/gpdb/bin
-OLD_DATADIR=/Users/pivotal/workspace/gpdb/gpAux/gpdemo/datadirs/
+OLD_DATADIR=$HOME/workspace/gpdb/gpAux/gpdemo/datadirs/
 NEW_BINDIR=/usr/local/gpdb/bin
 NEW_DATADIR=
 
@@ -131,7 +131,24 @@ wait_stop_clusters()
 {
 # There should be something here that ensures that the stop command finished
 # This is where we should be checking the `gp_upgrade status upgrade to see if that stop finished.
-sleep 30
+  # Capture status upgrade log
+  # Parse and see if the status upgrade is complete
+    is_shutdown_clusters_complete=false
+  while ! $is_shutdown_clusters_complete; do
+    status_output=$(gp_upgrade status upgrade)
+    res="COMPLETE - Shutdown clusters"
+    if  [[ "${status_output}" =~ "${res}" ]]; then
+      echo "gpstop for both clusters done"
+      echo "$status_output"
+      is_shutdown_clusters_complete=true
+
+    else
+      echo "$status_output"
+    fi
+
+    sleep 0.5
+  done
+
 }
 
 upgrade_segment()
