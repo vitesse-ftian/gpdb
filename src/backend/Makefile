@@ -57,7 +57,7 @@ endif
 LIBS := $(filter-out -lpgport, $(LIBS)) $(LDAP_LIBS_BE)
 
 # The backend doesn't need everything that's in LIBS, however
-LIBS := $(filter-out -lreadline -ledit -ltermcap -lncurses -lcurses, $(LIBS))
+LIBS := $(filter-out -lreadline -ledit -ltermcap -lncurses -ldm -lcurses, $(LIBS))
 
 # adding codegen libraries
 ifeq ($(enable_codegen),yes)

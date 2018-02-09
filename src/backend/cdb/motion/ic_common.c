@@ -111,10 +111,14 @@ RecvTupleChunk(MotionConn *conn, ChunkTransportState *transportStates)
 		/* go through and form us some TupleChunks. */
 		bytesProcessed = PACKET_HEADER_SIZE;
 	}
-	else
+ 	else if (Gp_interconnect_type == INTERCONNECT_TYPE_UDPIFC)
 	{
 		/* go through and form us some TupleChunks. */
 		bytesProcessed = sizeof(struct icpkthdr);
+	}
+	else
+	{
+		bytesProcessed = PACKET_HEADER_SIZE;
 	}
 
 #ifdef AMS_VERBOSE_LOGGING
@@ -234,6 +238,8 @@ InitMotionLayerIPC(void)
 		InitMotionTCP(&TCP_listenerFd, &tcp_listener);
 	else if (Gp_interconnect_type == INTERCONNECT_TYPE_UDPIFC)
 		InitMotionUDPIFC(&UDP_listenerFd, &udp_listener);
+	else if (Gp_interconnect_type == INTERCONNECT_TYPE_DEEPMESH)
+		InitMotionDeepMesh();
 
 	Gp_listener_port = (udp_listener<<16) | tcp_listener;
 
@@ -251,6 +257,8 @@ CleanUpMotionLayerIPC(void)
 		CleanupMotionTCP();
 	else if (Gp_interconnect_type == INTERCONNECT_TYPE_UDPIFC)
 		CleanupMotionUDPIFC();
+	else if (Gp_interconnect_type == INTERCONNECT_TYPE_DEEPMESH)
+		CleanupMotionDeepMesh();
 
 	/* close down the Interconnect listener socket. */
     if (TCP_listenerFd >= 0)
@@ -486,7 +494,7 @@ DeregisterReadInterest(ChunkTransportState *transportStates,
 #endif
 		markUDPConnInactiveIFC(conn);
 	}
-	else
+ 	else if (Gp_interconnect_type == INTERCONNECT_TYPE_TCP)
 	{
 		/*
 		 * we also mark the connection as "done." The way synchronization works is
@@ -500,6 +508,10 @@ DeregisterReadInterest(ChunkTransportState *transportStates,
 
 		MPP_FD_CLR(conn->sockfd, &pEntry->readSet);
 	}
+	else if (Gp_interconnect_type == INTERCONNECT_TYPE_DEEPMESH) {
+		conn->stillActive = false;
+	}
+
 	return;
 }
 
@@ -655,6 +667,9 @@ SetupInterconnect(EState *estate)
 		SetupUDPIFCInterconnect(estate);
 	else if (Gp_interconnect_type == INTERCONNECT_TYPE_TCP)
 		SetupTCPInterconnect(estate);
+	else if (Gp_interconnect_type == INTERCONNECT_TYPE_DEEPMESH)
+		SetupDeepMeshInterconnect(estate);
+
 }
 
 /*
@@ -695,6 +710,10 @@ TeardownInterconnect(ChunkTransportState *transportStates,
 	else if (Gp_interconnect_type == INTERCONNECT_TYPE_TCP)
 	{
 		TeardownTCPInterconnect(transportStates, mlStates, forceEOS, hasError);
+	}
+	else if (Gp_interconnect_type == INTERCONNECT_TYPE_DEEPMESH)
+	{
+		TeardownDeepMeshInterconnect(transportStates, mlStates, forceEOS, hasError);
 	}
 }
 
@@ -766,6 +785,7 @@ createChunkTransportState(ChunkTransportState *transportStates,
     pEntry->scanStart = 0;
     pEntry->sendSlice = sendSlice;
     pEntry->recvSlice = recvSlice;
+	pEntry->dmEpHdlr = -1;
 
 	pEntry->conns = palloc0(pEntry->numConns * sizeof(pEntry->conns[0]));
 
@@ -784,6 +804,7 @@ createChunkTransportState(ChunkTransportState *transportStates,
         conn->cdbProc = NULL;
         conn->sent_record_typmod = 0;
         conn->remapper = NULL;
+        conn->dmEpHdlr = -1;
     }
 
 	return pEntry;

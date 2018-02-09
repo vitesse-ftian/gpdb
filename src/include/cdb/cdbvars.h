@@ -402,6 +402,7 @@ extern int	Gp_max_packet_size;	/* GUC var */
 
 #define INTERCONNECT_TYPE_TCP    (0)
 #define INTERCONNECT_TYPE_UDPIFC (1)
+#define INTERCONNECT_TYPE_DEEPMESH (2)
 
 extern int Gp_interconnect_type;
 
@@ -415,6 +416,14 @@ extern int Gp_interconnect_fc_method;
 
 extern const char *gpvars_assign_gp_interconnect_fc_method(const char *newval, bool doit, GucSource source __attribute__((unused)) );
 extern const char *gpvars_show_gp_interconnect_fc_method(void);
+
+/*
+ * Parameter Gp_interconnect_deepmesh_path
+ *
+ * it's the UNIX domain path connecting to DeepMesh agent.
+ * This guc is specific to the DeepMesh-interconnect
+ */
+extern char   *Gp_interconnect_deepmesh_path;
 
 /*
  * Parameter Gp_interconnect_queue_depth

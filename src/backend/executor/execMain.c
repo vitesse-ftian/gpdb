@@ -94,6 +94,7 @@
 #include "cdb/cdbsubplan.h"
 #include "cdb/cdbvars.h"
 #include "cdb/ml_ipc.h"
+#include "cdb/deepmesh.h"
 #include "cdb/cdbmotion.h"
 #include "cdb/cdbtm.h"
 #include "cdb/cdboidsync.h"
@@ -673,6 +674,21 @@ ExecutorStart(QueryDesc *queryDesc, int eflags)
 																   queryDesc->params,
 																   queryDesc->estate->es_param_exec_vals);
 			}
+
+                        /*
+                         * This call creates a DeepMesh session for this dispatch plan
+                         * if interconnect type is DeepMesh
+                         */
+                        if(Gp_interconnect_type == INTERCONNECT_TYPE_DEEPMESH) {
+                                uint64 sessId = gp_session_id;
+
+                                sessId = (sessId << 32) + queryDesc->estate->es_sliceTable->ic_instance_id;
+                                if( 0 != dm_sess_create(sessId)) {
+                                        ereport(ERROR, (errcode(ERRCODE_GP_INTERCONNECTION_ERROR),
+                                                        errmsg("Create DM session id %ld errorno %d errmsg %s",
+                                                                sessId, dm_errno(), dm_errmsg())));
+                                }
+                        }
 
 			/*
 			 * This call returns after launching the threads that send the

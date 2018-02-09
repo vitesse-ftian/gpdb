@@ -214,6 +214,7 @@ int			Gp_interconnect_hash_multiplier = 2;		/* sets the size of the
 int			interconnect_setup_timeout = 7200;
 
 int			Gp_interconnect_type = INTERCONNECT_TYPE_UDPIFC;
+char			*Gp_interconnect_deepmesh_path = NULL;
 
 bool		gp_interconnect_aggressive_retry = true; /* fast-track app-level retry */
 
@@ -917,6 +918,8 @@ gpvars_assign_gp_interconnect_type(const char *newval, bool doit, GucSource sour
 		newtype = INTERCONNECT_TYPE_UDPIFC;
 	else if (!pg_strcasecmp("tcp", newval))
 		newtype = INTERCONNECT_TYPE_TCP;
+	else if (!pg_strcasecmp("deepmesh", newval))
+		newtype = INTERCONNECT_TYPE_DEEPMESH;
 	else
 		elog(ERROR, "Unknown interconnect type. (current type is '%s')", gpvars_show_gp_interconnect_type());
 
@@ -935,6 +938,8 @@ gpvars_show_gp_interconnect_type(void)
 	{
 		case INTERCONNECT_TYPE_TCP:
 			return "TCP";
+		case INTERCONNECT_TYPE_DEEPMESH:
+			return "DEEPMESH";
 		case INTERCONNECT_TYPE_UDPIFC:
 		default:
 			return "UDPIFC";

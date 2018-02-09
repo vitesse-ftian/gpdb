@@ -5202,7 +5202,7 @@ struct config_string ConfigureNamesString_gp[] =
 	{
 		{"gp_interconnect_type", PGC_BACKEND, GP_ARRAY_TUNING,
 			gettext_noop("Sets the protocol used for inter-node communication."),
-			gettext_noop("Valid values are \"tcp\" and \"udpifc\"."),
+			gettext_noop("Valid values are \"tcp\", \"deepmesh\" and \"udpifc\"."),
 			GUC_GPDB_ADDOPT
 		},
 		&gp_interconnect_type_str,
@@ -5217,6 +5217,16 @@ struct config_string ConfigureNamesString_gp[] =
 		},
 		&gp_interconnect_fc_method_str,
 		"loss", gpvars_assign_gp_interconnect_fc_method, gpvars_show_gp_interconnect_fc_method
+	},
+
+	{
+		{"gp_interconnect_deepmesh_path", PGC_BACKEND, GP_ARRAY_TUNING,
+			gettext_noop("Sets UNIX path used for DEEPMESH interconnect."),
+			NULL,
+			GUC_GPDB_ADDOPT
+		},
+		&Gp_interconnect_deepmesh_path,
+		"", NULL, NULL
 	},
 
 	{

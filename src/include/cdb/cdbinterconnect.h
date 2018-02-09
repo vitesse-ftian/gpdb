@@ -25,6 +25,7 @@
 #include "cdb/tupchunk.h"
 #include "cdb/tupchunklist.h"
 #include "cdb/tupleremap.h"
+#include "cdb/deepmesh.h"
 
 struct CdbProcess;                          /* #include "nodes/execnodes.h" */
 struct Slice;                               /* #include "nodes/execnodes.h" */
@@ -100,6 +101,7 @@ typedef enum MotionConnState
     mcsNull,
 	mcsAccepted,
     mcsSetupOutgoingConnection,
+    mcsSetupIncomingConnection, // added by DeepMeshLayer
 	mcsConnecting,
 	mcsRecvRegMsg,
 	mcsSendRegMsg,
@@ -195,6 +197,12 @@ struct MotionConn
 {
 	/* socket file descriptor. */
 	int			sockfd;
+
+	/* Following parameters with dm prefix is only used by DeepMesh layer*/
+	dm_handle_t dmEpHdlr; /* DeepMesh my endpoint handler */
+	dm_ep_t dmLocalEp; /* DeepMesh my endpoint for this connection */
+	dm_ep_t dmPeerEp; /* DeepMesh peer endpoint for this connection */
+	bool    isReceiver; /* true if I am the receiver endpoint */
 
 	/* send side queue for packets to be sent */
 	ICBufferList sndQueue;
@@ -317,11 +325,19 @@ typedef struct ChunkTransportStateEntry
 	/* highest file descriptor in the readSet. */
 	int			highReadSock;
 
-    int         scanStart;
+	int         scanStart;
 
-    /* slice table entries */
-    struct Slice   *sendSlice;
-    struct Slice   *recvSlice;
+	/* DeepMesh Endpoint Handler for this entry (DEEPMESH-IC specific)
+	 * If the sendSlice is me, then endpoin handler only sends data.
+	 * otherwise it only receives data. All MotionConns in this entry
+	 * share the same dmEpHdlr.
+	*/
+	dm_handle_t dmEpHdlr;
+	dm_ep_t dmLocalEp;
+
+	/* slice table entries */
+	struct Slice   *sendSlice;
+	struct Slice   *recvSlice;
 
 	/* setup info */
 	int			outgoingPortRetryCount;

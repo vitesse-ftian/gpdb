@@ -319,18 +319,24 @@ extern TupleChunkListItem RecvTupleChunk(MotionConn *conn, ChunkTransportState *
 
 extern void InitMotionTCP(int *listenerSocketFd, uint16 *listenerPort);
 extern void InitMotionUDPIFC(int *listenerSocketFd, uint16 *listenerPort);
+extern void InitMotionDeepMesh();
 extern void markUDPConnInactiveIFC(MotionConn *conn);
 extern void CleanupMotionTCP(void);
 extern void CleanupMotionUDPIFC(void);
+extern void CleanupMotionDeepMesh(void);
 extern void WaitInterconnectQuitUDPIFC(void);
 extern void SetupTCPInterconnect(struct EState *estate);
 extern void SetupUDPIFCInterconnect(struct EState *estate);
+extern void SetupDeepMeshInterconnect(struct EState *estate);
 extern void TeardownTCPInterconnect(ChunkTransportState *transportStates,
 								 MotionLayerState *mlStates,
 								 bool forceEOS, bool hasError);
 extern void TeardownUDPIFCInterconnect(ChunkTransportState *transportStates,
 								 MotionLayerState *mlStates,
 								 bool forceEOS);
+extern void TeardownDeepMeshInterconnect(ChunkTransportState *transportStates,
+								 MotionLayerState *mlStates,
+								 bool forceEOS, bool hasError);
 
 extern uint32 getActiveMotionConns(void);
 extern void adjustMasterRouting(Slice *recvSlice);
