@@ -2,7 +2,6 @@
 #define DEEPMESH_H
 
 #include <stdint.h>
-#include <stdbool.h>
 
 #define DM_ERR_TIMEOUT           1
 #define DM_ERR_NOTCONNECTED      2
