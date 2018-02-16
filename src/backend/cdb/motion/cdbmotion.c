@@ -624,9 +624,9 @@ RecvTupleFrom(MotionLayerState *mlStates,
 	ReceiveReturnCode recvRC = END_OF_STREAM;
 	htup_fifo ReadyList;
 
-#ifdef AMS_VERBOSE_LOGGING
-	elog(DEBUG5, "RecvTupleFrom( motNodeID = %d, srcRoute = %d )", motNodeID, srcRoute);
-#endif
+//#ifdef AMS_VERBOSE_LOGGING
+	elog(DEBUG3, "RecvTupleFrom( motNodeID = %d, srcRoute = %d )", motNodeID, srcRoute);
+//#endif
 
 	pMNEntry = getMotionNodeEntry(mlStates, motNodeID, "RecvTupleFrom");
 

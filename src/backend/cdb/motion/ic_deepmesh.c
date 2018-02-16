@@ -102,9 +102,11 @@ InitMotionDeepMesh()
                 errmsg("Interconnect error initalizing DeepMesh motion layer."),
                 errdetail("connect to agent with path %s errno %d errmsg %s",
                           Gp_interconnect_deepmesh_path, dm_errno(), dm_errmsg())));
+    } else if (gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG) {
+        ereport(LOG, (errmsg("Interconnect DeepMesh: initialization successfully")));
     }
 
-	return;
+    return;
 }
 
 /* cleanup any DeepMesh-specific comms info */
@@ -113,8 +115,10 @@ CleanupMotionDeepMesh(void)
 {
     /* disconnect with DeepMesh agent*/
     dm_disconnect();
+    if (gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG)
+        ereport(LOG, (errmsg("Interconnect DeepMesh: disconnect successfully")));
 
-	return;
+    return;
 }
 
 /* Cancel Check function invoked by DeepMesh operations. This allow user cancels the blocked 
@@ -164,6 +168,13 @@ readMsgFromConn(MotionConn *conn, ChunkTransportState *transportStates)
     /* Read full msg from connection. dm_recv() will be blocked until full msg is read
      * or is cancelled by interrupted/cancelFromQD, or connection error occurs, peer ep leaves.
      */
+    if (gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG) {
+        ereport(LOG, (errmsg("Interconnect DeepMesh start to receive a chunk from conn sid %ld sender ep %s receiver ep %s",
+                      getDmSessId(),
+                      (char*)conn->dmPeerEp.id,
+                      (char*)conn->dmLocalEp.id)));
+    }
+
     dm_set_cancel_checker(readMsgCancelCheck, transportStates);
     msg = dm_recv(conn->dmEpHdlr, &conn->dmPeerEp, &msgSize, 0);
     dm_set_cancel_checker(defaultCancelCheck, transportStates);
@@ -178,6 +189,14 @@ readMsgFromConn(MotionConn *conn, ChunkTransportState *transportStates)
                       (char*)conn->dmLocalEp.id,
                       dm_errno(),
                       dm_errmsg())));
+    }
+
+    if (gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG) {
+        elog(LOG, "Interconnect DeepMesh readMsgFromConn read %d bytes from conn sid %ld local sender %s receiver ep %s",
+                      msgSize,
+                      getDmSessId(),
+                      (char*)conn->dmPeerEp.id,
+                      (char*)conn->dmLocalEp.id);
     }
 
     /* validate msg */
@@ -209,9 +228,13 @@ readMsgFromConn(MotionConn *conn, ChunkTransportState *transportStates)
     memcpy(conn->pBuff, msg, msgSize);
     conn->msgPos = conn->pBuff;
 
-#ifdef AMS_VERBOSE_LOGGING
-	elog(DEBUG5, "readMsgFromConn: got %d bytes", conn->msgSize);
-#endif
+    if (gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG) {
+        elog(LOG, "Interconnect DeepMesh end read chunks %d bytes from conn sid %ld local sender %s receiver ep %s",
+                      conn->msgSize,
+                      getDmSessId(),
+                      (char*)conn->dmPeerEp.id,
+                      (char*)conn->dmLocalEp.id);
+    }
 
     return;
 }
@@ -251,8 +274,8 @@ startOutgoingConnections(ChunkTransportState *transportStates,
     getDmEpId(&localEp, Gp_segment, sendSlice->sliceIndex, recvSlice->sliceIndex, true);
 
     if (gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG) {
-        elog(DEBUG4, "Interconnect seg%d slice%d setting up sending motion node ",
-                    Gp_segment, sendSlice->sliceIndex);
+        ereport(DEBUG4, (errmsg("Interconnect seg%d slice%d setting up sending motion node ",
+                    Gp_segment, sendSlice->sliceIndex)));
     }
 
     pEntry = createChunkTransportState(transportStates,
@@ -270,7 +293,7 @@ startOutgoingConnections(ChunkTransportState *transportStates,
         cdbProc = (CdbProcess *) lfirst(cell);
         if (cdbProc) {
             conn->cdbProc = cdbProc;
-			conn->pBuff = palloc(Gp_max_packet_size);
+            conn->pBuff = palloc(Gp_max_packet_size);
             conn->state = mcsSetupOutgoingConnection;
             conn->wakeup_ms = 0;
             conn->remoteContentId = cdbProc->contentid;
@@ -286,6 +309,9 @@ startOutgoingConnections(ChunkTransportState *transportStates,
                                 errmsg("Interconnect error create sender endpoint."),
                                     errdetail("sid %ld, ep %s errno %d errmsg %s",
                                     sid, (char*)localEp.id, dm_errno(), dm_errmsg())));
+                } else if (gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG) {
+                    ereport(LOG, (errmsg("Interconnect create a sender endpoint sid %ld ep %s successfully.",
+                                    sid, (char*)localEp.id)));
                 }
                 pEntry->dmLocalEp = localEp;
             }
@@ -326,9 +352,8 @@ startIncomingConnections(ChunkTransportState *transportStates,
         CdbProcess *cdbProc;
         MotionConn *conn;
 
-#ifdef AMS_VERBOSE_LOGGING
-        elog(DEBUG5, "Setting up RECEIVING motion node for sender %d", childId);
-#endif
+        ereport(DEBUG3, (errmsg("Setting up RECEIVING motion node for sender %d", childId)));
+
         sendSlice = (Slice *) list_nth(transportStates->sliceTable->slices, childId);
 
         /* If we're using directed-dispatch we have dummy primary-process entries, so we count the entries.*/
@@ -337,9 +362,9 @@ startIncomingConnections(ChunkTransportState *transportStates,
 
         getDmEpId(&localEp, Gp_segment, sendSlice->sliceIndex, recvSlice->sliceIndex, false);
         pEntry = createChunkTransportState(transportStates, sendSlice, recvSlice, totalNumProcs);
-        conn = pEntry->conns;
 
         for (int i = 0; i < totalNumProcs; i++) {
+            conn = pEntry->conns + i;
             cdbProc = list_nth(sendSlice->primaryProcesses, i);
             if (cdbProc) {
                 conn->cdbProc = cdbProc;
@@ -357,6 +382,9 @@ startIncomingConnections(ChunkTransportState *transportStates,
                                 errmsg("Interconnect error create receiver endpoint."),
                                     errdetail("sid %ld, ep %s errno %d errmsg %s",
                                     sid, (char*)localEp.id, dm_errno(), dm_errmsg())));
+                    } else if (gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG) {
+                        ereport(LOG, (errmsg("Interconnect create a receiver endpoint sid %ld ep %s successfully.",
+                                    sid, (char*)localEp.id)));
                     }
                     pEntry->dmLocalEp = localEp;
                 }
@@ -373,7 +401,11 @@ startIncomingConnections(ChunkTransportState *transportStates,
         /* let cdbmotion now how many receivers to expect. */
         setExpectedReceivers(transportStates->estate->motionlayer_context, childId, activeNumProcs);
 
-        pIncomingCount += activeNumProcs;
+        *pIncomingCount += activeNumProcs;
+
+#ifdef AMS_VERBOSE_LOGGING
+	dumpEntryConnections(DEBUG4, pEntry);
+#endif
     }
 }
 
@@ -437,6 +469,7 @@ sendRegisterMessages(ChunkTransportState *transportStates, ChunkTransportStateEn
 
             if(0 == dm_send(conn->dmEpHdlr, &conn->dmPeerEp, (char*)regMsg, sizeof(*regMsg), DM_FLAG_WAIT_EP_JOIN)) {
                 /* registration msg is sent successfully */
+
                 if (gp_log_interconnect >= GPVARS_VERBOSITY_VERBOSE) {
                     ereport(LOG, (errmsg("Interconnect registration message is sent successfully "
                                     "to seg%d slice%d ep %s pid=%d "
@@ -497,12 +530,13 @@ readRegisterMessages(ChunkTransportState *transportStates,
         RegisterMessage *regMsg;
         RegisterMessage msg;
 
-#ifdef AMS_VERBOSE_LOGGING
-        elog(DEBUG5, "Reading registration msgs for sender %d", childId);
-#endif
         sendSlice = (Slice *) list_nth(transportStates->sliceTable->slices, childId);
         getChunkTransportState(transportStates, sendSlice->sliceIndex, &pEntry);
         Assert(pEntry);
+
+        if (gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG) {
+            ereport(LOG, (errmsg("Reading registration msgs for sender %d, conn # %d", childId, pEntry->numConns)));
+        }
 
         for (int i = 0; i < pEntry->numConns; i++) {
             conn = &pEntry->conns[i];
@@ -519,7 +553,7 @@ readRegisterMessages(ChunkTransportState *transportStates,
                 if(NULL == msgRead) {
                     ereport(ERROR, (errcode(ERRCODE_GP_INTERCONNECTION_ERROR),
                             errmsg("Interconnect error reading register message "
-                                    "for conn sess_id %ld sender ep %s receiver ep %s ", 
+                                    "for conn sid %ld sender ep %s receiver ep %s ", 
                                     sid, (char*)conn->dmPeerEp.id, (char*)conn->dmLocalEp.id),
                             errdetail("dm_read errno %d errmsg %s ",
                                       dm_errno(),
@@ -585,21 +619,22 @@ readRegisterMessages(ChunkTransportState *transportStates,
                 /* message looks good */
                 if (gp_log_interconnect >= GPVARS_VERBOSITY_VERBOSE) {
                     ereport(LOG, (errmsg("Interconnect seg%d slice%d receiver ep %s receives "
-                             "a valid registration message from seg%d slice%d sender ep %s pid=%d",
+                             "a valid registration message from seg%d slice%d sid %ld sender ep %s pid=%d",
                              Gp_segment,
                              msg.recvSliceIndex,
                              (char*)conn->dmLocalEp.id,
                              msg.srcContentId,
                              msg.sendSliceIndex,
+                             sid,
                              (char*)conn->dmPeerEp.id,
                              msg.srcPid)));
                 }
 
                 /* set values of the connection */
-	            conn->pBuff = palloc(Gp_max_packet_size);
+                conn->pBuff = palloc(Gp_max_packet_size);
                 conn->remapper = CreateTupleRemapper();
-	            conn->recvBytes = 0;
-	            conn->tupleCount = 0;
+                conn->recvBytes = 0;
+                conn->tupleCount = 0;
                 conn->msgPos = NULL;
                 conn->msgSize = 0;
 
@@ -607,12 +642,14 @@ readRegisterMessages(ChunkTransportState *transportStates,
                 conn->stillActive = true;
                 conn->isReceiver = true;
             } /*if*/
+
         } /* for pEntry */
-    }
 
 #ifdef AMS_VERBOSE_LOGGING
-//	dumpEntryConnections(DEBUG4, pEntry);
+	dumpEntryConnections(DEBUG4, pEntry);
 #endif
+
+    }
 
 } /* readRegisterMessages */
 
@@ -635,9 +672,9 @@ SetupDeepMeshInterconnect(EState *estate)
     ChunkTransportStateEntry *sendingChunkTransportState = NULL;
 
     if (estate->interconnect_context) {
-        elog(FATAL, "SetupDeepMeshInterconnect: already initialized.");
+        ereport(FATAL, (errmsg("SetupDeepMeshInterconnect: already initialized.")));
     } else if (!estate->es_sliceTable) {
-        elog(FATAL, "SetupTCPInterconnect: no slice table ?");
+        ereport(FATAL, (errmsg("SetupTCPInterconnect: no slice table ?")));
     }
 
     estate->interconnect_context = palloc0(sizeof(ChunkTransportState));
@@ -796,6 +833,10 @@ TeardownDeepMeshInterconnect(ChunkTransportState *transportStates,
         if( -1 != pEntry->dmEpHdlr) {
             /* TODO: should read all pending data before leave? */
             dm_ep_leave(pEntry->dmEpHdlr);
+            if (gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG) {
+                ereport(LOG, (errmsg("TeardownDeepMeshInterconnect sid %ld ep %s leave.", 
+                                     getDmSessId(),(char*)pEntry->dmLocalEp.id)));
+            }
         }
 
         for (i = 0; i < pEntry->numConns; i++) {
@@ -842,9 +883,14 @@ TeardownDeepMeshInterconnect(ChunkTransportState *transportStates,
              * src endpoint. Destionation should be able to read the sent data. If it's true
              * we don't need to wait for all peer receivers to leave the session */
         }
+
         /* close the sender endpoint */
         if( -1 != pEntry->dmEpHdlr) {
             dm_ep_leave(pEntry->dmEpHdlr);
+            if (gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG) {
+                ereport(LOG, (errmsg("TeardownDeepMeshInterconnect sid %ld ep %s leave.", 
+                                     getDmSessId(),(char*)pEntry->dmLocalEp.id)));
+            }
         }
 
         pEntry = removeChunkTransportState(transportStates, mySlice->sliceIndex);
@@ -866,10 +912,8 @@ TeardownDeepMeshInterconnect(ChunkTransportState *transportStates,
     if (forceEOS)
         RESUME_INTERRUPTS();
 
-#ifdef AMS_VERBOSE_LOGGING
     if (gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG)
         elog(DEBUG4, "TeardownDeepMeshInterconnect successful");
-#endif
 }
 
 static void
@@ -913,12 +957,11 @@ RecvTupleChunkFromDeepMesh(ChunkTransportState *transportStates,
     ChunkTransportStateEntry *pEntry = NULL;
     MotionConn *conn;
 
+    if (gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG)
+        ereport(DEBUG3, (errmsg("RecvTupleChunkFromDeepMesh(motNodID=%d, srcRoute=%d)", motNodeID, srcRoute)));
+
     /* check em' */
     ML_CHECK_FOR_INTERRUPTS(transportStates->teardownActive);
-
-#ifdef AMS_VERBOSE_LOGGING
-    elog(DEBUG5, "RecvTupleChunkFrom(motNodID=%d, srcpIncIdx %d srcRoute=%d)", motNodeID, srcpInc, srcRoute);
-#endif
 
     getChunkTransportState(transportStates, motNodeID, &pEntry);
     conn = pEntry->conns + srcRoute;
@@ -934,90 +977,119 @@ RecvTupleChunkFromAnyDeepMesh(MotionLayerState *mlStates,
                          int16 *srcRoute)
 {
     ChunkTransportStateEntry *pEntry = NULL;
-    MotionConn *conn;
     TupleChunkListItem tcItem;
-    const char *msg = NULL;
-    int   msgSize = 0;
-    int   index = 0;
-    dm_ep_t srcEp;
-
-#ifdef AMS_VERBOSE_LOGGING
-    elog(DEBUG5, "RecvTupleChunkFromAny(motNodeId=%d)", motNodeID);
-#endif
 
     getChunkTransportState(transportStates, motNodeID, &pEntry);
     Assert(pEntry);
 
-    if(-1 != pEntry->dmEpHdlr)
+    if(-1 == pEntry->dmEpHdlr)
         return NULL;
 
-    /* Read full msg from the receiver endpoint. dm_recv() will be blocked until full msg is read
-     * or is cancelled by interrupted/cancelFromQD, or connection error occurs.
-     */
-    memset(&srcEp, 0, sizeof(srcEp));
+    if (gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG) {
+        ereport(LOG, (errmsg("Interconnect DeepMesh start to receive chunks from any sid %ld receiver ep %s.",
+                    getDmSessId(), (char*)pEntry->dmLocalEp.id)));
+    }
 
-    dm_set_cancel_checker(readMsgCancelCheck, transportStates);
-    msg = dm_recv(pEntry->dmEpHdlr, &srcEp, &msgSize, 0);
-    dm_set_cancel_checker(defaultCancelCheck, transportStates);
+    bool  tryAgain; 
+    do {
+        const char *msg = NULL;
+        int   msgSize = 0;
+        int   index = 0;
+        dm_ep_t srcEp;
+        uint32  sizeInMsg = 0;
 
-    if( NULL == msg) {
-        ereport(ERROR, (errcode(ERRCODE_GP_INTERCONNECTION_ERROR),
-            errmsg("Interconnect error reading any msg."),
-                errdetail("%s for sid %ld receiver ep %s errno %d errmsg %s: %m",
+        /* Read full msg from the receiver endpoint. dm_recv() will be blocked until full msg is read
+         * or is cancelled by interrupted/cancelFromQD, or connection error occurs.
+         */
+        memset(&srcEp, 0, sizeof(srcEp));
+
+        dm_set_cancel_checker(readMsgCancelCheck, transportStates);
+        msg = dm_recv(pEntry->dmEpHdlr, &srcEp, &msgSize, 0);
+        dm_set_cancel_checker(defaultCancelCheck, transportStates);
+
+        if( NULL == msg) {
+            ereport(ERROR, (errcode(ERRCODE_GP_INTERCONNECTION_ERROR),
+                   errmsg("Interconnect error reading any msg."),
+                   errdetail("%s for sid %ld receiver ep %s errno %d errmsg %s: %m",
                       "dm_recv",
                       getDmSessId(),
                       (char*)pEntry->dmLocalEp.id,
                       dm_errno(),
                       dm_errmsg())));
-    }
+        } else if (gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG) {
+            elog(LOG, "RecvTupleChunkFromAnyDeepMesh dm_recv read msg size %d sid %ld receiver ep %s.",
+                   msgSize, getDmSessId(), (char*)pEntry->dmLocalEp.id);
+        }
 
-    /* validate msg */
-    if( msgSize < PACKET_HEADER_SIZE) {
-        ereport(ERROR, (errcode(ERRCODE_GP_INTERCONNECTION_ERROR),
-             errmsg("Interconnect error read msg size less than packet head size ."),
-                errdetail("for sid %ld sender ep %s receiver ep %s msgsize %d: %m",
+        /* validate msg */
+        if( msgSize < PACKET_HEADER_SIZE) {
+            ereport(ERROR, (errcode(ERRCODE_GP_INTERCONNECTION_ERROR),
+                    errmsg("Interconnect error read msg size less than packet head size ."),
+                    errdetail("for sid %ld sender ep %s receiver ep %s msgsize %d: %m",
                       getDmSessId(),
                       (char*)srcEp.id,
                       (char*)pEntry->dmLocalEp.id,
                       msgSize)));
-    }
+        }
 
-    memcpy(&conn->msgSize, msg, sizeof(uint32));
-
-    if (msgSize != conn->msgSize || msgSize > Gp_max_packet_size ) {
-        ereport(ERROR, (errcode(ERRCODE_GP_INTERCONNECTION_ERROR),
-            errmsg("Interconnect error read msg size is invalid ."),
+        memcpy(&sizeInMsg, msg, sizeof(uint32));
+        if (msgSize != sizeInMsg || msgSize > Gp_max_packet_size ) {
+            ereport(ERROR, (errcode(ERRCODE_GP_INTERCONNECTION_ERROR),
+                errmsg("Interconnect error read msg size is invalid ."),
                 errdetail("for conn sid %ld sender ep %s receiver ep %s \
                       msgSize %d packMsgSize %d max_packet_size %d: %m",
                       getDmSessId(),
                       (char*)srcEp.id,
                       (char*)pEntry->dmLocalEp.id,
-                      msgSize, conn->msgSize, Gp_max_packet_size)));
-    }
-
-    /* get connection based on srcEp. TODO: should we do hashmap for quick search */
-    for(index = 0; index < pEntry->numConns; index++) {
-        conn = &pEntry->conns[index];
-
-        if(0 == strcmp(conn->dmPeerEp.id, srcEp.id)) {
-            /* copy the data to pbuf */
-            conn->recvBytes = msgSize;
-            memcpy(conn->pBuff, msg, msgSize);
-            conn->msgPos = conn->pBuff;
-
-            tcItem = RecvTupleChunk(conn, transportStates);
-            *srcRoute = index;
-            return tcItem;
+                      msgSize, sizeInMsg, Gp_max_packet_size)));
         }
-    }
 
-    /* Received data from an unexpected sender . Should not happen, report error.*/
-    ereport(ERROR, (errcode(ERRCODE_GP_INTERCONNECTION_ERROR),
-            errmsg("Interconnect error read msg from unexpected sender. "),
-                errdetail("sid %ld sender ep %s receiver ep %s : %m",
+        /* get connection based on srcEp. TODO: should we do hashmap for quick search */
+        tryAgain = false;
+        for(index = 0; index < pEntry->numConns; index++) {
+            MotionConn *conn;
+
+            conn = &pEntry->conns[index];
+            if(0 == strcmp(conn->dmPeerEp.id, srcEp.id)) {
+                if(!conn->stillActive) {
+                    /* the connection is not active, discard the msg */
+                    if (gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG) {
+                        elog(DEBUG3, "RecvTupleChunkFromAnyDeepMesh receive chunks from inactive sender." \
+                                     " sid %ld receiver ep %s source ep %s.",
+                            getDmSessId(), (char*)pEntry->dmLocalEp.id, (char*)conn->dmPeerEp.id);
+                    }
+                    tryAgain = true;
+                    break;
+                }
+                /* copy the data to pbuf */
+                conn->recvBytes = msgSize;
+                conn->msgSize = msgSize;
+                memcpy(conn->pBuff, msg, msgSize);
+                conn->msgPos = conn->pBuff;
+
+                tcItem = RecvTupleChunk(conn, transportStates);
+                *srcRoute = index;
+
+                if (gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG) {
+                    elog(DEBUG3, "RecvTupleChunkFromAnyDeepMesh receive chunks from any sid %ld receiver ep %s source ep %s.",
+                        getDmSessId(), (char*)pEntry->dmLocalEp.id, (char*)conn->dmPeerEp.id);
+                }
+                return tcItem;
+            }
+        }
+
+        if(!tryAgain) {
+            /* Received data from an unexpected sender . Should not happen, report error.*/
+            ereport(ERROR, (errcode(ERRCODE_GP_INTERCONNECTION_ERROR),
+                    errmsg("Interconnect error read msg from unexpected sender. "),
+                    errdetail("sid %ld sender ep %s receiver ep %s : %m",
                       getDmSessId(),
                       (char*)srcEp.id,
                       (char*)pEntry->dmLocalEp.id)));
+        }
+    } while(tryAgain);
+
+    // should never reach it.
     return NULL;
 }
 

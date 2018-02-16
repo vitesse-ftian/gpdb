@@ -687,7 +687,9 @@ ExecutorStart(QueryDesc *queryDesc, int eflags)
                                         ereport(ERROR, (errcode(ERRCODE_GP_INTERCONNECTION_ERROR),
                                                         errmsg("Create DM session id %ld errorno %d errmsg %s",
                                                                 sessId, dm_errno(), dm_errmsg())));
-                                }
+                                }else {
+					ereport(LOG, (errmsg("Create DM session id %ld successfully", sessId)));
+				}
                         }
 
 			/*

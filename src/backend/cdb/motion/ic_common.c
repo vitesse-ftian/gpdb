@@ -73,8 +73,8 @@ uint16	savedSeqServerPort = 0;
 static void setupSeqServerConnection(char *hostname, uint16 port);
 
 #ifdef AMS_VERBOSE_LOGGING
-static void	dumpEntryConnections(int elevel, ChunkTransportStateEntry *pEntry);
-static void	print_connection(ChunkTransportState *transportStates, int fd, const char *msg);
+void	dumpEntryConnections(int elevel, ChunkTransportStateEntry *pEntry);
+void	print_connection(ChunkTransportState *transportStates, int fd, const char *msg);
 #endif
 
 static void
@@ -238,8 +238,10 @@ InitMotionLayerIPC(void)
 		InitMotionTCP(&TCP_listenerFd, &tcp_listener);
 	else if (Gp_interconnect_type == INTERCONNECT_TYPE_UDPIFC)
 		InitMotionUDPIFC(&UDP_listenerFd, &udp_listener);
-	else if (Gp_interconnect_type == INTERCONNECT_TYPE_DEEPMESH)
+	else if (Gp_interconnect_type == INTERCONNECT_TYPE_DEEPMESH) {
+		tcp_listener = 0xffff; /* Hack to make upper level check successuflly */
 		InitMotionDeepMesh();
+	}
 
 	Gp_listener_port = (udp_listener<<16) | tcp_listener;
 
@@ -868,14 +870,17 @@ dumpEntryConnections(int elevel, ChunkTransportStateEntry *pEntry)
 				 pEntry->motNodeId, i);
         else
             elog(elevel, "... motNodeId=%d conns[%d]:  "
-				 "%s%d pid=%d sockfd=%d remote=%s local=%s",
+				 "%s%d state = %d pid=%d sockfd=%d remote=%s local=%s dmLocalEp=%s dmPeerEp=%s",
 				 pEntry->motNodeId, i,
 				 (i < pEntry->numPrimaryConns) ? "seg" : "mir",
 				 conn->remoteContentId,
+				 conn->state,
 				 conn->cdbProc ? conn->cdbProc->pid : 0,
 				 conn->sockfd,
 				 conn->remoteHostAndPort,
-				 conn->localHostAndPort);
+				 conn->localHostAndPort,
+				 (char*)conn->dmLocalEp.id,
+				 (char*)conn->dmPeerEp.id);
 	}
 }
 #endif
