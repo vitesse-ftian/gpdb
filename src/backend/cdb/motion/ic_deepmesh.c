@@ -103,7 +103,7 @@ InitMotionDeepMesh()
                 errdetail("connect to agent with path %s errno %d errmsg %s",
                           Gp_interconnect_deepmesh_path, dm_errno(), dm_errmsg())));
     } else if (gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG) {
-        ereport(LOG, (errmsg("Interconnect DeepMesh: initialization successfully")));
+        ereport(DEBUG1, (errmsg("Interconnect DeepMesh: initialization successfully")));
     }
 
     return;
@@ -116,7 +116,7 @@ CleanupMotionDeepMesh(void)
     /* disconnect with DeepMesh agent*/
     dm_disconnect();
     if (gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG)
-        ereport(LOG, (errmsg("Interconnect DeepMesh: disconnect successfully")));
+        ereport(DEBUG1, (errmsg("Interconnect DeepMesh: disconnect successfully")));
 
     return;
 }
@@ -169,7 +169,7 @@ readMsgFromConn(MotionConn *conn, ChunkTransportState *transportStates)
      * or is cancelled by interrupted/cancelFromQD, or connection error occurs, peer ep leaves.
      */
     if (gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG) {
-        ereport(LOG, (errmsg("Interconnect DeepMesh start to receive a chunk from conn sid %ld sender ep %s receiver ep %s",
+        ereport(DEBUG1, (errmsg("Interconnect DeepMesh start to receive a chunk from conn sid %ld sender ep %s receiver ep %s",
                       getDmSessId(),
                       (char*)conn->dmPeerEp.id,
                       (char*)conn->dmLocalEp.id)));
@@ -192,7 +192,7 @@ readMsgFromConn(MotionConn *conn, ChunkTransportState *transportStates)
     }
 
     if (gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG) {
-        elog(LOG, "Interconnect DeepMesh readMsgFromConn read %d bytes from conn sid %ld local sender %s receiver ep %s",
+        elog(DEBUG1, "Interconnect DeepMesh readMsgFromConn read %d bytes from conn sid %ld local sender %s receiver ep %s",
                       msgSize,
                       getDmSessId(),
                       (char*)conn->dmPeerEp.id,
@@ -229,7 +229,7 @@ readMsgFromConn(MotionConn *conn, ChunkTransportState *transportStates)
     conn->msgPos = conn->pBuff;
 
     if (gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG) {
-        elog(LOG, "Interconnect DeepMesh end read chunks %d bytes from conn sid %ld local sender %s receiver ep %s",
+        elog(DEBUG1, "Interconnect DeepMesh end read chunks %d bytes from conn sid %ld local sender %s receiver ep %s",
                       conn->msgSize,
                       getDmSessId(),
                       (char*)conn->dmPeerEp.id,
@@ -274,7 +274,7 @@ startOutgoingConnections(ChunkTransportState *transportStates,
     getDmEpId(&localEp, Gp_segment, sendSlice->sliceIndex, recvSlice->sliceIndex, true);
 
     if (gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG) {
-        ereport(DEBUG4, (errmsg("Interconnect seg%d slice%d setting up sending motion node ",
+        ereport(DEBUG1, (errmsg("Interconnect seg%d slice%d setting up sending motion node ",
                     Gp_segment, sendSlice->sliceIndex)));
     }
 
@@ -310,7 +310,7 @@ startOutgoingConnections(ChunkTransportState *transportStates,
                                     errdetail("sid %ld, ep %s errno %d errmsg %s",
                                     sid, (char*)localEp.id, dm_errno(), dm_errmsg())));
                 } else if (gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG) {
-                    ereport(LOG, (errmsg("Interconnect create a sender endpoint sid %ld ep %s successfully.",
+                    ereport(DEBUG1, (errmsg("Interconnect create a sender endpoint sid %ld ep %s successfully.",
                                     sid, (char*)localEp.id)));
                 }
                 pEntry->dmLocalEp = localEp;
@@ -352,7 +352,9 @@ startIncomingConnections(ChunkTransportState *transportStates,
         CdbProcess *cdbProc;
         MotionConn *conn;
 
-        ereport(DEBUG3, (errmsg("Setting up RECEIVING motion node for sender %d", childId)));
+        if (gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG) {
+            ereport(DEBUG1, (errmsg("Setting up RECEIVING motion node for sender %d", childId)));
+        }
 
         sendSlice = (Slice *) list_nth(transportStates->sliceTable->slices, childId);
 
@@ -383,7 +385,7 @@ startIncomingConnections(ChunkTransportState *transportStates,
                                     errdetail("sid %ld, ep %s errno %d errmsg %s",
                                     sid, (char*)localEp.id, dm_errno(), dm_errmsg())));
                     } else if (gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG) {
-                        ereport(LOG, (errmsg("Interconnect create a receiver endpoint sid %ld ep %s successfully.",
+                        ereport(DEBUG1, (errmsg("Interconnect create a receiver endpoint sid %ld ep %s successfully.",
                                     sid, (char*)localEp.id)));
                     }
                     pEntry->dmLocalEp = localEp;
@@ -403,9 +405,9 @@ startIncomingConnections(ChunkTransportState *transportStates,
 
         *pIncomingCount += activeNumProcs;
 
-#ifdef AMS_VERBOSE_LOGGING
-	dumpEntryConnections(DEBUG4, pEntry);
-#endif
+        if (gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG) {
+	    dumpEntryConnections(DEBUG4, pEntry);
+        }
     }
 }
 
@@ -444,7 +446,7 @@ sendRegisterMessages(ChunkTransportState *transportStates, ChunkTransportStateEn
                IsA(pEntry->sendSlice, Slice));
 
             if (gp_log_interconnect >= GPVARS_VERBOSITY_VERBOSE) {
-                ereport(LOG, (errmsg("Interconnect sending registration message "
+                ereport(DEBUG1, (errmsg("Interconnect sending registration message "
                                  "to seg%d slice%d ep %s pid=%d "
                                  "from seg%d slice%d ep %s epHdlr=%d",
                                  conn->remoteContentId,
@@ -471,7 +473,7 @@ sendRegisterMessages(ChunkTransportState *transportStates, ChunkTransportStateEn
                 /* registration msg is sent successfully */
 
                 if (gp_log_interconnect >= GPVARS_VERBOSITY_VERBOSE) {
-                    ereport(LOG, (errmsg("Interconnect registration message is sent successfully "
+                    ereport(DEBUG1, (errmsg("Interconnect registration message is sent successfully "
                                     "to seg%d slice%d ep %s pid=%d "
                                     "from seg%d slice%d ep %s epHdlr=%d",
                                     conn->remoteContentId,
@@ -535,7 +537,7 @@ readRegisterMessages(ChunkTransportState *transportStates,
         Assert(pEntry);
 
         if (gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG) {
-            ereport(LOG, (errmsg("Reading registration msgs for sender %d, conn # %d", childId, pEntry->numConns)));
+            ereport(DEBUG1, (errmsg("Reading registration msgs for sender %d, conn # %d", childId, pEntry->numConns)));
         }
 
         for (int i = 0; i < pEntry->numConns; i++) {
@@ -618,7 +620,7 @@ readRegisterMessages(ChunkTransportState *transportStates,
 
                 /* message looks good */
                 if (gp_log_interconnect >= GPVARS_VERBOSITY_VERBOSE) {
-                    ereport(LOG, (errmsg("Interconnect seg%d slice%d receiver ep %s receives "
+                    ereport(DEBUG1, (errmsg("Interconnect seg%d slice%d receiver ep %s receives "
                              "a valid registration message from seg%d slice%d sid %ld sender ep %s pid=%d",
                              Gp_segment,
                              msg.recvSliceIndex,
@@ -645,10 +647,9 @@ readRegisterMessages(ChunkTransportState *transportStates,
 
         } /* for pEntry */
 
-#ifdef AMS_VERBOSE_LOGGING
-	dumpEntryConnections(DEBUG4, pEntry);
-#endif
-
+        if (gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG) {
+	    dumpEntryConnections(DEBUG4, pEntry);
+        }
     }
 
 } /* readRegisterMessages */
@@ -739,7 +740,7 @@ SetupDeepMeshInterconnect(EState *estate)
     if (gp_log_interconnect >= GPVARS_VERBOSITY_TERSE) {
         elapsed_ms = gp_get_elapsed_ms(&startTime);
 
-        elog(LOG, "SetupInterconnect+" UINT64_FORMAT "ms: Activated %d incoming, "
+        elog(DEBUG1, "SetupInterconnect+" UINT64_FORMAT "ms: Activated %d incoming, "
                  "%d outgoing routes.",
                  elapsed_ms, expectedTotalIncoming, expectedTotalOutgoing);
     }
@@ -809,7 +810,7 @@ TeardownDeepMeshInterconnect(ChunkTransportState *transportStates,
 
         /* if setup did not complete, log the slicetable */
         if (!transportStates->activated && gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG) {
-            elog_node_display(DEBUG3, "local slice table", transportStates->sliceTable, true);
+            elog_node_display(DEBUG1, "local slice table", transportStates->sliceTable, true);
         }
     }
 
@@ -826,7 +827,7 @@ TeardownDeepMeshInterconnect(ChunkTransportState *transportStates,
         getChunkTransportState(transportStates, aSlice->sliceIndex, &pEntry);
 
         if (gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG) {
-            elog(DEBUG3, "Interconnect closing connections from slice%d",
+            elog(DEBUG1, "Interconnect closing connections from slice%d",
                 aSlice->sliceIndex);
         }
 
@@ -834,7 +835,7 @@ TeardownDeepMeshInterconnect(ChunkTransportState *transportStates,
             /* TODO: should read all pending data before leave? */
             dm_ep_leave(pEntry->dmEpHdlr);
             if (gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG) {
-                ereport(LOG, (errmsg("TeardownDeepMeshInterconnect sid %ld ep %s leave.", 
+                ereport(DEBUG1, (errmsg("TeardownDeepMeshInterconnect sid %ld receiver ep %s leave.", 
                                      getDmSessId(),(char*)pEntry->dmLocalEp.id)));
             }
         }
@@ -859,7 +860,7 @@ TeardownDeepMeshInterconnect(ChunkTransportState *transportStates,
     if (mySlice->parentIndex != -1) {
         /* cleanup a Sending motion node. */
         if (gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG) {
-            elog(DEBUG3, "Interconnect seg%d slice%d closing connections to slice%d",
+            elog(DEBUG1, "Interconnect seg%d slice%d closing connections to slice%d",
                  Gp_segment, mySlice->sliceIndex, mySlice->parentIndex);
         }
 
@@ -888,7 +889,7 @@ TeardownDeepMeshInterconnect(ChunkTransportState *transportStates,
         if( -1 != pEntry->dmEpHdlr) {
             dm_ep_leave(pEntry->dmEpHdlr);
             if (gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG) {
-                ereport(LOG, (errmsg("TeardownDeepMeshInterconnect sid %ld ep %s leave.", 
+                ereport(DEBUG1, (errmsg("TeardownDeepMeshInterconnect sid %ld ep %s leave.", 
                                      getDmSessId(),(char*)pEntry->dmLocalEp.id)));
             }
         }
@@ -913,7 +914,7 @@ TeardownDeepMeshInterconnect(ChunkTransportState *transportStates,
         RESUME_INTERRUPTS();
 
     if (gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG)
-        elog(DEBUG4, "TeardownDeepMeshInterconnect successful");
+        elog(DEBUG1, "TeardownDeepMeshInterconnect successful");
 }
 
 static void
@@ -928,7 +929,7 @@ doSendStopMessageDeepMesh(ChunkTransportState *transportStates, int16 motNodeID)
     Assert(pEntry);
 
     if (gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG)
-        elog(DEBUG3, "Interconnect needs no more input from slice%d; notifying senders to stop.",
+        elog(DEBUG1, "Interconnect needs no more input from slice%d; notifying senders to stop.",
                      motNodeID);
 
     for (i = 0; i < pEntry->numConns; i++) {
@@ -958,7 +959,7 @@ RecvTupleChunkFromDeepMesh(ChunkTransportState *transportStates,
     MotionConn *conn;
 
     if (gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG)
-        ereport(DEBUG3, (errmsg("RecvTupleChunkFromDeepMesh(motNodID=%d, srcRoute=%d)", motNodeID, srcRoute)));
+        ereport(DEBUG1, (errmsg("RecvTupleChunkFromDeepMesh(motNodID=%d, srcRoute=%d)", motNodeID, srcRoute)));
 
     /* check em' */
     ML_CHECK_FOR_INTERRUPTS(transportStates->teardownActive);
@@ -986,7 +987,7 @@ RecvTupleChunkFromAnyDeepMesh(MotionLayerState *mlStates,
         return NULL;
 
     if (gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG) {
-        ereport(LOG, (errmsg("Interconnect DeepMesh start to receive chunks from any sid %ld receiver ep %s.",
+        ereport(DEBUG1, (errmsg("Interconnect DeepMesh start to receive chunks from any sid %ld receiver ep %s.",
                     getDmSessId(), (char*)pEntry->dmLocalEp.id)));
     }
 
@@ -1017,7 +1018,7 @@ RecvTupleChunkFromAnyDeepMesh(MotionLayerState *mlStates,
                       dm_errno(),
                       dm_errmsg())));
         } else if (gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG) {
-            elog(LOG, "RecvTupleChunkFromAnyDeepMesh dm_recv read msg size %d sid %ld receiver ep %s.",
+            elog(DEBUG1, "RecvTupleChunkFromAnyDeepMesh dm_recv read msg size %d sid %ld receiver ep %s.",
                    msgSize, getDmSessId(), (char*)pEntry->dmLocalEp.id);
         }
 
@@ -1054,7 +1055,7 @@ RecvTupleChunkFromAnyDeepMesh(MotionLayerState *mlStates,
                 if(!conn->stillActive) {
                     /* the connection is not active, discard the msg */
                     if (gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG) {
-                        elog(DEBUG3, "RecvTupleChunkFromAnyDeepMesh receive chunks from inactive sender." \
+                        elog(DEBUG1, "RecvTupleChunkFromAnyDeepMesh receive chunks from inactive sender." \
                                      " sid %ld receiver ep %s source ep %s.",
                             getDmSessId(), (char*)pEntry->dmLocalEp.id, (char*)conn->dmPeerEp.id);
                     }
@@ -1071,7 +1072,7 @@ RecvTupleChunkFromAnyDeepMesh(MotionLayerState *mlStates,
                 *srcRoute = index;
 
                 if (gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG) {
-                    elog(DEBUG3, "RecvTupleChunkFromAnyDeepMesh receive chunks from any sid %ld receiver ep %s source ep %s.",
+                    elog(DEBUG1, "RecvTupleChunkFromAnyDeepMesh receive chunks from any sid %ld receiver ep %s source ep %s.",
                         getDmSessId(), (char*)pEntry->dmLocalEp.id, (char*)conn->dmPeerEp.id);
                 }
                 return tcItem;
@@ -1113,7 +1114,7 @@ SendEosDeepMesh(MotionLayerState *mlStates,
 
     getChunkTransportState(transportStates, motNodeID, &pEntry);
     if (gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG) {
-        elog(DEBUG3, "Interconnect seg%d slice%d sending end-of-stream to slice%d",
+        elog(DEBUG1, "Interconnect seg%d slice%d sending end-of-stream to slice%d",
             Gp_segment, motNodeID, pEntry->recvSlice->sliceIndex);
     }
 
@@ -1131,9 +1132,8 @@ SendEosDeepMesh(MotionLayerState *mlStates,
             flushBufferDeepMesh(mlStates, transportStates, pEntry, conn, motNodeID);
         }
 
-#ifdef AMS_VERBOSE_LOGGING
-        elog(DEBUG5, "SendEosDeepMesh() Leaving");
-#endif
+    if (gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG) {
+        elog(DEBUG1, "SendEosDeepMesh() Leaving");
     }
 
     return;
@@ -1144,15 +1144,13 @@ static bool
 flushBufferDeepMesh(MotionLayerState *mlStates, ChunkTransportState *transportStates,
             ChunkTransportStateEntry *pEntry, MotionConn *conn, int16 motionId)
 {
-#ifdef AMS_VERBOSE_LOGGING
-    {
+    if (gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG) {
         struct timeval snapTime;
 
         gettimeofday(&snapTime, NULL);
-        elog(DEBUG5, "----sending chunk @%s.%d time is %d.%d",
+        elog(DEBUG1, "----sending chunk @%s.%d time is %d.%d",
             __FILE__, __LINE__, (int) snapTime.tv_sec, (int) snapTime.tv_usec);
     }
-#endif 
     
     /* first set header length */
     *(uint32 *) conn->pBuff = conn->msgSize;
@@ -1172,7 +1170,7 @@ flushBufferDeepMesh(MotionLayerState *mlStates, ChunkTransportState *transportSt
                 return false;
             }
             ereport(ERROR, (errcode(ERRCODE_GP_INTERCONNECTION_ERROR),
-                    errmsg("Interconnect error flush buffer DeepMesh %m"),
+                    errmsg("Interconnect error flush buffer DeepMesh failed"),
                     errdetail("error during dm_send() call (errno %d errmsg %s)."
                               "For sid %ld sender ep %s receiver ep %s",
                                dm_errno(), dm_errmsg(),
@@ -1205,9 +1203,9 @@ SendChunkDeepMesh(MotionLayerState *mlStates, ChunkTransportState *transportStat
 
     Assert(conn->msgSize > 0);
 
-#ifdef AMS_VERBOSE_LOGGING
-    elog(DEBUG5, "sendChunk: msgSize %d this chunk length %d", conn->msgSize, tcItem->chunk_length);
-#endif
+    if (gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG) {
+        elog(DEBUG1, "sendChunk: msgSize %d this chunk length %d", conn->msgSize, tcItem->chunk_length);
+    }
 
     if (conn->msgSize + length > Gp_max_packet_size) {
         if (!flushBufferDeepMesh(mlStates, transportStates, pEntry, conn, motionId))

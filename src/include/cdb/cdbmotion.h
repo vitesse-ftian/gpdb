@@ -20,7 +20,7 @@
 #include "cdb/ml_ipc.h"
 
 /* Define this if you want tons of logs! */
-#define AMS_VERBOSE_LOGGING
+/* #define AMS_VERBOSE_LOGGING */
 
 
 typedef enum SendReturnCode
