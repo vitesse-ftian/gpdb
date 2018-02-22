@@ -1131,9 +1131,10 @@ SendEosDeepMesh(MotionLayerState *mlStates,
         if (conn->dmEpHdlr >= 0 && conn->state == mcsStarted) {
             flushBufferDeepMesh(mlStates, transportStates, pEntry, conn, motNodeID);
         }
+    }
 
     if (gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG) {
-        elog(DEBUG1, "SendEosDeepMesh() Leaving");
+        elog(DEBUG1, "SendEosDeepMesh() finished");
     }
 
     return;

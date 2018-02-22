@@ -72,10 +72,8 @@ uint16	savedSeqServerPort = 0;
 
 static void setupSeqServerConnection(char *hostname, uint16 port);
 
-#ifdef AMS_VERBOSE_LOGGING
 void	dumpEntryConnections(int elevel, ChunkTransportStateEntry *pEntry);
 void	print_connection(ChunkTransportState *transportStates, int fd, const char *msg);
-#endif
 
 static void
 logChunkParseDetails(MotionConn *conn)
@@ -854,7 +852,6 @@ removeChunkTransportState(ChunkTransportState *transportStates,
 	return pEntry;
 }
 
-#ifdef AMS_VERBOSE_LOGGING
 void
 dumpEntryConnections(int elevel, ChunkTransportStateEntry *pEntry)
 {
@@ -883,7 +880,6 @@ dumpEntryConnections(int elevel, ChunkTransportStateEntry *pEntry)
 				 (char*)conn->dmPeerEp.id);
 	}
 }
-#endif
 
 /*
  * Set the listener address associated with the slice to
