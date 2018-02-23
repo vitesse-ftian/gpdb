@@ -948,6 +948,7 @@ ExecSetParamPlan(SubPlanState *node, ExprContext *econtext, QueryDesc *queryDesc
 	bool		shouldDispatch = false;
 	volatile bool shouldTeardownInterconnect = false;
 	volatile bool explainRecvStats = false;
+	uint64 dmSessId = 0;
 
 	if (Gp_role == GP_ROLE_DISPATCH &&
 		planstate != NULL &&
@@ -980,15 +981,15 @@ PG_TRY();
 		 * if interconnect type is DeepMesh
 		 */
 		if(Gp_interconnect_type == INTERCONNECT_TYPE_DEEPMESH) {
-			uint64 sessId = gp_session_id;
+			dmSessId = gp_session_id;
 
-			sessId = (sessId << 32) + queryDesc->estate->es_sliceTable->ic_instance_id;
-			if( 0 != dm_sess_create(sessId)) {
+			dmSessId = (dmSessId << 32) + queryDesc->estate->es_sliceTable->ic_instance_id;
+			if( 0 != dm_sess_create(dmSessId)) {
 				ereport(ERROR, (errcode(ERRCODE_GP_INTERCONNECTION_ERROR),
 					errmsg("Create DM session id %ld errorno %d errmsg %s",
-					sessId, dm_errno(), dm_errmsg())));
+					dmSessId, dm_errno(), dm_errmsg())));
 			}else if(gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG){
-				ereport(DEBUG1, (errmsg("Create DM session id %ld successfully", sessId)));
+				ereport(DEBUG1, (errmsg("Create DM session id %ld successfully", dmSessId)));
 			}
 		}
 
@@ -1200,6 +1201,18 @@ PG_TRY();
 							 queryDesc->estate->motionlayer_context,
 							 false, false); /* following success on QD */
 		queryDesc->estate->interconnect_context = NULL;
+
+		/*
+		 * This call destroys the DeepMesh session for this dispatch plan
+		 * if interconnect type is DeepMesh
+		 */
+		if(Gp_interconnect_type == INTERCONNECT_TYPE_DEEPMESH) {
+			dm_sess_destroy(dmSessId);
+			if(gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG){
+				ereport(DEBUG1, (errmsg("Destory DM session id %ld successfully", dmSessId)));
+			}
+		}
+
 	}
 }
 PG_CATCH();
@@ -1248,6 +1261,17 @@ PG_CATCH();
 							 queryDesc->estate->motionlayer_context,
 							 true, false);
 		queryDesc->estate->interconnect_context = NULL;
+
+		/*
+		 * This call destroys the DeepMesh session for this dispatch plan
+		 * if interconnect type is DeepMesh
+		 */
+		if(Gp_interconnect_type == INTERCONNECT_TYPE_DEEPMESH) {
+			dm_sess_destroy(dmSessId);
+			if(gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG){
+				ereport(DEBUG1, (errmsg("Destory DM session id %ld successfully", dmSessId)));
+			}
+		}
 	}
 	PG_RE_THROW();
 }

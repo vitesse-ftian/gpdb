@@ -1927,6 +1927,7 @@ void mppExecutorFinishup(QueryDesc *queryDesc)
 {
 	EState	   *estate;
 	Slice      *currentSlice;
+	bool	   shouldDestroyDmSess = false;
 
 	/* caller must have switched into per-query memory context already */
 	estate = queryDesc->estate;
@@ -1941,6 +1942,8 @@ void mppExecutorFinishup(QueryDesc *queryDesc)
 		CdbDispatchResults *pr = estate->dispatcherState->primaryResults;
 		HTAB 			   *aopartcounts = NULL;
 		DispatchWaitMode	waitMode = DISPATCH_WAIT_NONE;
+
+		shouldDestroyDmSess = true;
 
 		/*
 		 * If we are finishing a query before all the tuples of the query
@@ -2049,6 +2052,20 @@ void mppExecutorFinishup(QueryDesc *queryDesc)
 		TeardownInterconnect(estate->interconnect_context, estate->motionlayer_context, estate->cancelUnfinished, false);
 		estate->es_interconnect_is_setup = false;
 	}
+
+	if(shouldDestroyDmSess && Gp_interconnect_type == INTERCONNECT_TYPE_DEEPMESH) {
+		/*
+		 * This call destroys the DeepMesh session for this dispatch plan
+		 * if interconnect type is DeepMesh
+		 */
+		uint64 dmSessId = gp_session_id;
+		dmSessId = (dmSessId << 32) + queryDesc->estate->es_sliceTable->ic_instance_id;
+
+		dm_sess_destroy(dmSessId);
+		if(gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG){
+			ereport(DEBUG1, (errmsg("Destory DM session id %ld successfully", dmSessId)));
+		}
+	}
 }
 
 /*
@@ -2059,6 +2076,7 @@ void mppExecutorFinishup(QueryDesc *queryDesc)
 void mppExecutorCleanup(QueryDesc *queryDesc)
 {
 	EState	   *estate;
+	bool	   shouldDestroyDmSess = false;
 
 	/* caller must have switched into per-query memory context already */
 	estate = queryDesc->estate;
@@ -2105,6 +2123,8 @@ void mppExecutorCleanup(QueryDesc *queryDesc)
 		 * the dispatch results in order to tell the nodes below we no longer
 		 * need any more tuples.
 		 */
+		shouldDestroyDmSess = true;
+
 		if (estate->es_interconnect_is_setup && !estate->es_got_eos)
 			ExecSquelchNode(queryDesc->planstate);
 
@@ -2118,6 +2138,20 @@ void mppExecutorCleanup(QueryDesc *queryDesc)
 		estate->es_interconnect_is_setup = false;
 	}
 	
+	if(shouldDestroyDmSess && Gp_interconnect_type == INTERCONNECT_TYPE_DEEPMESH) {
+		/*
+		 * This call destroys the DeepMesh session for this dispatch plan
+		 * if interconnect type is DeepMesh
+		 */
+		uint64 dmSessId = gp_session_id;
+		dmSessId = (dmSessId << 32) + estate->es_sliceTable->ic_instance_id;
+
+		dm_sess_destroy(dmSessId);
+		if(gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG){
+			ereport(DEBUG1, (errmsg("Destory DM session id %ld successfully", dmSessId)));
+		}
+	}
+
 	/**
 	 * Perfmon related stuff.
 	 */

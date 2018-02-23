@@ -803,9 +803,10 @@ TeardownDeepMeshInterconnect(ChunkTransportState *transportStates,
 
         if (elevel)
             ereport(elevel, (errmsg("Interconnect seg%d slice%d cleanup state: "
-                                    "%s; setup was %s",
+                                    "%s; hasError: %s; setup was %s",
                                     Gp_segment, mySlice->sliceIndex,
                                     forceEOS ? "force" : "normal",
+                                    hasError ? "true" : "false",
                                     transportStates->activated ? "completed" : "exited")));
 
         /* if setup did not complete, log the slicetable */
@@ -1146,11 +1147,8 @@ flushBufferDeepMesh(MotionLayerState *mlStates, ChunkTransportState *transportSt
             ChunkTransportStateEntry *pEntry, MotionConn *conn, int16 motionId)
 {
     if (gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG) {
-        struct timeval snapTime;
-
-        gettimeofday(&snapTime, NULL);
-        elog(DEBUG1, "----sending chunk @%s.%d time is %d.%d",
-            __FILE__, __LINE__, (int) snapTime.tv_sec, (int) snapTime.tv_usec);
+        elog(DEBUG1, "flushBufferDeepMesh: start to flush data. conn sid %ld sender ep %s receiver ep %s.",
+                              getDmSessId(), (char*)conn->dmLocalEp.id, (char*)conn->dmPeerEp.id);
     }
     
     /* first set header length */
@@ -1162,6 +1160,11 @@ flushBufferDeepMesh(MotionLayerState *mlStates, ChunkTransportState *transportSt
      */
     if(0 != dm_send(conn->dmEpHdlr, &conn->dmPeerEp, (char*)conn->pBuff, conn->msgSize, DM_FLAG_SEND_CHECK_STOP)) {
         if(dm_errno() == DM_ERR_STOP_MSG) {
+            if (gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG) {
+                elog(DEBUG1, "flushBufferDeepMesh: send to conn sid %ld sender ep %s receiver ep %s, receive a stop msg",
+                              getDmSessId(), (char*)conn->dmLocalEp.id, (char*)conn->dmPeerEp.id);
+            }
+
             conn->stillActive = false;
             return false;
         } else {
@@ -1170,6 +1173,27 @@ flushBufferDeepMesh(MotionLayerState *mlStates, ChunkTransportState *transportSt
                 conn->stillActive = false;
                 return false;
             }
+
+/*
+            char buff[2048];
+            void *array[10];
+            size_t size;
+            char **strings;
+            size_t i;
+            char *ptr = buff;
+            int len = 2048;
+
+            size = backtrace (array, 10);
+            strings = backtrace_symbols (array, size);
+
+            for (i = 0; i < size; i++) {
+               int n = snprintf (ptr, len, "%s\n", strings[i]);
+               ptr += n;
+               len -= n;
+            }
+            *ptr = 0;
+            free (strings);
+*/
             ereport(ERROR, (errcode(ERRCODE_GP_INTERCONNECTION_ERROR),
                     errmsg("Interconnect error flush buffer DeepMesh failed"),
                     errdetail("error during dm_send() call (errno %d errmsg %s)."
