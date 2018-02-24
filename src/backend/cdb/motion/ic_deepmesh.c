@@ -833,7 +833,16 @@ TeardownDeepMeshInterconnect(ChunkTransportState *transportStates,
         }
 
         if( -1 != pEntry->dmEpHdlr) {
-            /* TODO: should read all pending data before leave? */
+            /* BugFix: There is certain case that QE goes to TeardownInterconnect without 
+             * waiting for receiving End-Of-Stream from all senders, or sending Stop Msgs
+             * to senders, we bypassed the senario by sending Stop Msgs to all stillActive senders. 
+             * Note: If a receiver receives end-of-stream from , or send stop msg to a sender,
+             *  the connection's stillActive will be set to false.
+             */
+            if(!hasError) {
+                doSendStopMessageDeepMesh(transportStates, aSlice->sliceIndex);
+            }
+
             dm_ep_leave(pEntry->dmEpHdlr);
             if (gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG) {
                 ereport(DEBUG1, (errmsg("TeardownDeepMeshInterconnect sid %ld receiver ep %s leave.", 
@@ -936,12 +945,18 @@ doSendStopMessageDeepMesh(ChunkTransportState *transportStates, int16 motNodeID)
     for (i = 0; i < pEntry->numConns; i++) {
 
         conn = pEntry->conns + i;
-	    /* Note: we're only concerned with receivers here. */
-        if (conn->dmEpHdlr >= 0 && mcsStarted == conn->state && conn->isReceiver) {
+	    /* Note: we're only concerned with receivers and conection is still active here. */
+        if (conn->dmEpHdlr >= 0 && mcsStarted == conn->state && conn->isReceiver && conn->stillActive) {
 
             if( 0 != dm_send(conn->dmEpHdlr, &conn->dmPeerEp, &m, sizeof(char), 0)) {
                 /* Should always sent unless there is underling dm_agent error */
-                 elog(LOG, "SendStopMessage: failed on dm_send. errno %d errmsg %s", dm_errno(), dm_errmsg());
+                 elog(LOG, "SendStopMessage: failed on dm_send. conn sid %ld sender ep %s receiver ep %s" \
+                           " errno %d errmsg %s", getDmSessId(), (char*)conn->dmLocalEp.id, (char*)conn->dmPeerEp.id,
+                            dm_errno(), dm_errmsg());
+            } else if (gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG) {
+                 elog(DEBUG1, "SendStopMessage: receiver sends stop msg. conn sid %ld sender ep %s receiver ep %s" \
+                           " errno %d errmsg %s", getDmSessId(), (char*)conn->dmLocalEp.id, (char*)conn->dmPeerEp.id,
+                            dm_errno(), dm_errmsg());
             }
 
             /* will set the stillActive to false */
@@ -1149,6 +1164,14 @@ flushBufferDeepMesh(MotionLayerState *mlStates, ChunkTransportState *transportSt
     if (gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG) {
         elog(DEBUG1, "flushBufferDeepMesh: start to flush data. conn sid %ld sender ep %s receiver ep %s.",
                               getDmSessId(), (char*)conn->dmLocalEp.id, (char*)conn->dmPeerEp.id);
+    }
+    
+    if( !conn->stillActive) {
+        if (gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG) {
+            elog(DEBUG1, "flushBufferDeepMesh: flush data in inactive conn sid %ld sender ep %s receiver ep %s.",
+                              getDmSessId(), (char*)conn->dmLocalEp.id, (char*)conn->dmPeerEp.id);
+        }
+        return false;
     }
     
     /* first set header length */
