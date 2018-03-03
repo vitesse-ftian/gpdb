@@ -535,7 +535,7 @@ gp_log_interconnect=debug
 
 #gp_max_packet_size = 8192
 gp_interconnect_type=deepmesh
-gp_interconnect_deepmesh_path='/tmp/test.socket'
+gp_interconnect_deepmesh_path='/tmp/dmagent.socket'
 
 # - Worker Process Creation -
 

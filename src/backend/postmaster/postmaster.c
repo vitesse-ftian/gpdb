@@ -125,6 +125,7 @@
 #include "postmaster/perfmon.h"
 #include "postmaster/primary_mirror_mode.h"
 #include "postmaster/syslogger.h"
+#include "postmaster/dmagent.h"
 #include "postmaster/backoff.h"
 #include "postmaster/perfmon_segmentinfo.h"
 #include "replication/walsender.h"
@@ -245,7 +246,7 @@ bool		log_hostname;		/* for ps display and logging */
 bool		Log_connections = false;
 bool		Db_user_namespace = false;
 
-char	   *bonjour_name;
+char		*bonjour_name;
 
 static PrimaryMirrorMode gInitialMode = PMModeMirrorlessSegment;
 
@@ -267,7 +268,8 @@ static pid_t StartupPID = 0,
 			PgStatPID = 0,
 			SysLoggerPID = 0,
 			FilerepPID = 0,
-			FilerepPeerResetPID = 0;
+			FilerepPeerResetPID = 0,
+			DeepMeshAgentPID = 0;
 
 #define StartupPidsAllZero() (StartupPID == 0 || StartupPass2PID == 0 || StartupPass3PID == 0 || StartupPass4PID == 0)
 
@@ -1500,6 +1502,11 @@ PostmasterMain(int argc, char *argv[])
 	SysLoggerPID = SysLogger_Start();
 
 	/*
+	 * If enabled, start up deepmesh agent subprocess
+	 */
+	DeepMeshAgentPID = DeepMeshAgent_Start();
+
+	/*
 	 * Reset whereToSendOutput from DestDebug (its starting state) to
 	 * DestNone. This stops ereport from sending log messages to stderr unless
 	 * Log_destination permits.  We don't do this until the postmaster is
@@ -2268,14 +2275,14 @@ ServerLoop(void)
 
 	nSockets = initMasks(&readmask);
 
-    doRequestedPrimaryMirrorModeTransitions( Shutdown > NoShutdown );
+	doRequestedPrimaryMirrorModeTransitions( Shutdown > NoShutdown );
 
 	for (;;)
 	{
 		fd_set		rmask;
 		int			selres;
 		int			s;
-        struct timeval timeout;
+		struct timeval timeout;
 
 		/*
 		 * Wait for a connection request to arrive.
@@ -2295,7 +2302,7 @@ ServerLoop(void)
 		 * we allow new connections in many cases (which could later be rejected because the database is shutting down,
 		 *   but that gives a nicer message than potentially hanging the client's connection)
 		 */
-        bool acceptNewConnections;
+		bool acceptNewConnections;
 
         if ( Shutdown == NoShutdown && FatalError)
         {
@@ -2399,9 +2406,9 @@ ServerLoop(void)
 		PG_SETMASK(&BlockSig);
 
 		if (Shutdown == ImmediateShutdown)
-        {
+		{
 		    ImmediateShutdownLoop();
-        }
+		}
 
         if (filerep_requires_postmaster_reset)
         {
@@ -2475,6 +2482,15 @@ ServerLoop(void)
 			if (Debug_print_server_processes)
 				elog(LOG,"restarted 'system logger process' as pid %ld",
 					 (long)SysLoggerPID);
+		}
+
+		/* We might have lost the deepmesh agent, try to start a new one */
+		if (DeepMeshAgentPID == 0)
+		{
+			DeepMeshAgentPID = DeepMeshAgent_Start();
+			if (0 != DeepMeshAgentPID && Debug_print_server_processes)
+				elog(LOG,"restarted 'deepmesh agent process' as pid %ld",
+					 (long)DeepMeshAgentPID);
 		}
 
 		if ( isFullPostmasterAndDatabaseIsAllowed())
@@ -4014,9 +4030,9 @@ SIGHUP_handler(SIGNAL_ARGS)
 		ProcessConfigFile(PGC_SIGHUP);
 		SignalChildren(SIGHUP);
 		signal_child_if_up(StartupPID, SIGHUP);
-        signal_child_if_up(StartupPass2PID, SIGHUP);
-        signal_child_if_up(StartupPass3PID, SIGHUP);
-        signal_child_if_up(StartupPass4PID, SIGHUP);
+		signal_child_if_up(StartupPass2PID, SIGHUP);
+		signal_child_if_up(StartupPass3PID, SIGHUP);
+		signal_child_if_up(StartupPass4PID, SIGHUP);
 		signal_child_if_up(BgWriterPID, SIGHUP);
 		signal_child_if_up(CheckpointerPID, SIGHUP);
 		signal_child_if_up(WalWriterPID, SIGHUP);
@@ -4035,6 +4051,7 @@ SIGHUP_handler(SIGNAL_ARGS)
 			}
 		}
 		signal_child_if_up(SysLoggerPID, SIGHUP);
+		signal_child_if_up(DeepMeshAgentPID, SIGHUP);
 		signal_child_if_up(PgStatPID, SIGHUP);
 
 		/* Reload authentication config files too */
@@ -4131,13 +4148,13 @@ pmdie(SIGNAL_ARGS)
 					(errmsg("received immediate shutdown request"),
 				     errSendAlert(true)));
 
-            signal_filerep_to_shutdown(SegmentStateImmediateShutdown);
+			signal_filerep_to_shutdown(SegmentStateImmediateShutdown);
 
 			SignalChildren(SIGQUIT);
 			signal_child_if_up(StartupPID, SIGQUIT);
-            signal_child_if_up(StartupPass2PID, SIGQUIT);
-            signal_child_if_up(StartupPass3PID, SIGQUIT);
-            signal_child_if_up(StartupPass4PID, SIGQUIT);
+			signal_child_if_up(StartupPass2PID, SIGQUIT);
+			signal_child_if_up(StartupPass3PID, SIGQUIT);
+			signal_child_if_up(StartupPass4PID, SIGQUIT);
  			StopServices(0, SIGQUIT);
 			signal_child_if_up(BgWriterPID, SIGQUIT);
 			signal_child_if_up(CheckpointerPID, SIGQUIT);
@@ -4224,15 +4241,15 @@ do_immediate_shutdown_reaper(void)
         zeroIfPidEqual(pid, &StartupPass4PID);
 
         /* services */
-		for (s = 0; s < MaxPMSubType; s++)
-		{
+        for (s = 0; s < MaxPMSubType; s++)
+        {
             zeroIfPidEqual(pid, &PMSubProcList[s].pid);
         }
 
         zeroIfPidEqual(pid, &BgWriterPID);
         zeroIfPidEqual(pid, &CheckpointerPID);
-		zeroIfPidEqual(pid, &WalReceiverPID);
-		zeroIfPidEqual(pid, &WalWriterPID);
+        zeroIfPidEqual(pid, &WalReceiverPID);
+        zeroIfPidEqual(pid, &WalWriterPID);
         zeroIfPidEqual(pid, &AutoVacPID);
         zeroIfPidEqual(pid, &PgArchPID);
         zeroIfPidEqual(pid, &PgStatPID);
@@ -4382,7 +4399,7 @@ do_reaper()
 	{
 		REAPER_LOOPHEADER();
 
-        Assert(pid != 0);
+		Assert(pid != 0);
 
 		if (Debug_print_server_processes)
 		{
@@ -4527,7 +4544,7 @@ do_reaper()
 				continue;
 			}
 
-		    Assert(StartupPass3PID == 0);
+			Assert(StartupPass3PID == 0);
 			StartupPass3PID = StartupPass3DataBase();
 			Assert(StartupPass3PID != 0);
 
@@ -4746,30 +4763,30 @@ do_reaper()
 		 */
 		if (pid == BgWriterPID)
 		{
-		    SetBGWriterPID(0);
+			SetBGWriterPID(0);
 
 			if (EXIT_STATUS_0(exitstatus) &&
 			    (pmState == PM_CHILD_STOP_WAIT_BGWRITER_CHECKPOINT
 			    || (FatalError && pmState >= PM_CHILD_STOP_BEGIN)))
 			{
-			    Assert(Shutdown > NoShutdown);
+				Assert(Shutdown > NoShutdown);
 
-                /* clean exit: PostmasterStateMachine logic does the rest */
-                continue;
+				/* clean exit: PostmasterStateMachine logic does the rest */
+				continue;
 			}
 
-            /*
-             * Any unexpected exit of the bgwriter (including FATAL exit) is treated as a crash.
-             */
-            HandleChildCrash(pid, exitstatus,
-                             _("background writer process"));
+			/*
+			 * Any unexpected exit of the bgwriter (including FATAL exit) is treated as a crash.
+			 */
+			HandleChildCrash(pid, exitstatus,
+					 _("background writer process"));
 
 			/*
 			 * If the bgwriter crashed while trying to write the shutdown
 			 * checkpoint, we may as well just stop here; any recovery
 			 * required will happen on next postmaster start.
 			 */
-            if (Shutdown > NoShutdown &&
+			if (Shutdown > NoShutdown &&
 				!DLGetHead(BackendList) &&
 				AutoVacPID == 0)
 			{
@@ -4800,7 +4817,7 @@ do_reaper()
 		{
 			FilerepPID = 0;
 
-		    LogChildExit(LOG, _("filerep main process"), pid, exitstatus);
+			LogChildExit(LOG, _("filerep main process"), pid, exitstatus);
 
 			/* filerep has died.  */
 			if (Shutdown == NoShutdown)
@@ -4953,7 +4970,7 @@ do_reaper()
 				LogChildExit(LOG, _("statistics collector process"),
 							 pid, exitstatus);
 			if (pmState == PM_RUN)
-            {
+			{
 				PgStatPID = pgstat_start();
 				if (Debug_print_server_processes)
 					elog(LOG,"restarted 'statistics collector process' as pid %ld",
@@ -4979,6 +4996,24 @@ do_reaper()
 			didServiceProcessWork &= (SysLoggerPID > 0);
 			if (!EXIT_STATUS_0(exitstatus))
 				LogChildExit(LOG, _("system logger process"),
+							 pid, exitstatus);
+			continue;
+		}
+
+		/* Was it the deepmesh agent? we'll always try to start a new one
+ 		 * Also no need to force reset of rest of the system 
+		 */
+		if (pid == DeepMeshAgentPID)
+		{
+			DeepMeshAgentPID = 0;
+
+			if (0 != DeepMeshAgentPID && Debug_print_server_processes)
+				elog(LOG,"restarted 'deepmesh agent process' as pid %ld",
+				 	(long)DeepMeshAgentPID);
+			didServiceProcessWork &= (DeepMeshAgentPID > 0);
+
+			if (!EXIT_STATUS_0(exitstatus))
+				LogChildExit(LOG, _("deepmesh agent process"),
 							 pid, exitstatus);
 			continue;
 		}
@@ -5037,7 +5072,8 @@ do_reaper()
 			AutoVacPID != 0 ||
 			WalReceiverPID != 0 ||
 			WalWriterPID != 0 ||
-			ServiceProcessesExist(0))
+			ServiceProcessesExist(0)||
+			DeepMeshAgentPID != 0)
         {
             /* important child is still going...wait longer */
 			goto reaper_done;
@@ -5162,6 +5198,8 @@ GetServerProcessTitle(int pid)
 		return "background writer process";
 	if (pid == CheckpointerPID)
 		return "checkpointer process";
+	if (pid == DeepMeshAgentPID)
+		return "deepmesh agent process";
 	if (pid == WalWriterPID)
 		return "walwriter process";
 	if (pid == WalReceiverPID)
@@ -5894,8 +5932,8 @@ StateMachineTransition_ShutdownBackends(void)
     /* and the autovac launcher too */
     signal_child_if_up(AutoVacPID, SIGTERM);
 
-	/* and the wal writer too */
-	signal_child_if_up(WalWriterPID, SIGTERM);
+    /* and the wal writer too */
+    signal_child_if_up(WalWriterPID, SIGTERM);
 
     signal_filerep_to_shutdown(SegmentStateShutdownFilerepBackends);
 }
@@ -7362,6 +7400,11 @@ SubPostmasterMain(int argc, char *argv[])
 static void
 ExitPostmaster(int status)
 {
+	/* add clean up of dmagent lock file here */
+	/* If up, terminate the deepmesh agent launched by me */
+	signal_child_if_up(DeepMeshAgentPID, SIGTERM);
+	DeepMeshAgent_Cleanup();
+
 	/* should cleanup shared memory and kill all backends */
 
 	/*
@@ -7781,7 +7824,7 @@ StartChildProcess(AuxProcType type)
 		PostmasterContext = NULL;
 
 		AuxiliaryProcessMain(ac, av);
-		ExitPostmaster(0);
+		proc_exit(0);
 	}
 #endif   /* EXEC_BACKEND */
 

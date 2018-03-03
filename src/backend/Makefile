@@ -68,7 +68,7 @@ endif
 LIBS := $(LIBS) -lpthread
 
 # client library used by DeepMesh interconnect type
-LIBS := $(LIBS) -ldm
+LIBS := $(LIBS) -ldmagent -ldmclient -ltoml
 
 ##########################################################################
 
