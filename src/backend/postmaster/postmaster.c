@@ -5007,6 +5007,7 @@ do_reaper()
 		{
 			DeepMeshAgentPID = 0;
 
+			DeepMeshAgentPID = DeepMeshAgent_Start();
 			if (0 != DeepMeshAgentPID && Debug_print_server_processes)
 				elog(LOG,"restarted 'deepmesh agent process' as pid %ld",
 				 	(long)DeepMeshAgentPID);
@@ -5577,7 +5578,7 @@ HandleChildCrash(int pid, int exitstatus, const char *procname)
 		signal_child(FilerepPeerResetPID, (SendStop ? SIGSTOP : SIGQUIT));
 	}
 
-	/* We do NOT restart the syslogger */
+	/* We do NOT restart the syslogger and deepmesh agent */
 
 	FatalError = true;
 

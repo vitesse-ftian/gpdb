@@ -25,7 +25,7 @@
 #include "cdb/tupchunk.h"
 #include "cdb/tupchunklist.h"
 #include "cdb/tupleremap.h"
-#include "cdb/deepmesh.h"
+#include "cdb/dmclient_api.h"
 
 struct CdbProcess;                          /* #include "nodes/execnodes.h" */
 struct Slice;                               /* #include "nodes/execnodes.h" */

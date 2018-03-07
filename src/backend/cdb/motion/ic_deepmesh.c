@@ -21,7 +21,7 @@
 #include "cdb/tupchunklist.h"
 #include "cdb/ml_ipc.h"
 #include "cdb/cdbvars.h"
-#include "cdb/deepmesh.h"
+#include "cdb/dmclient_api.h"
 
 #include <fcntl.h>
 #include <limits.h>

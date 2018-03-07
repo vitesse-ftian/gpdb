@@ -1,5 +1,5 @@
-#ifndef DEEPMESH_H
-#define DEEPMESH_H
+#ifndef DMCLIENT_API_H
+#define DMCLIENT_API_H
 
 #include <stdint.h>
 
@@ -129,17 +129,4 @@ void dm_set_cancel_checker(dm_cancel_check_func_pt checker, void *param);
   */
 int dm_config_agent(dm_agent_cfg_t *configs, uint16_t cfg_num);
 
-/**
-  * start deepmesh agent
-  * return 0 if success, -1 otherwise
-  */
-int dm_agent_start(char *cfg_fn, char *log_path);
-
-/**
-  * set to 1 if we need to shutdown DM agent.
-  */
-extern int dmagent_should_shutdown;
-extern int dmagent_got_usr1;
-extern int dmagent_got_sighup;
-
-#endif /* DEEPMESH_H */
+#endif /* DMCLIENT_API_H */

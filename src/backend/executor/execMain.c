@@ -94,7 +94,7 @@
 #include "cdb/cdbsubplan.h"
 #include "cdb/cdbvars.h"
 #include "cdb/ml_ipc.h"
-#include "cdb/deepmesh.h"
+#include "cdb/dmclient_api.h"
 #include "cdb/cdbmotion.h"
 #include "cdb/cdbtm.h"
 #include "cdb/cdboidsync.h"

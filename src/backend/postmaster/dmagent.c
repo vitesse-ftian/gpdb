@@ -22,6 +22,7 @@
 #include <unistd.h>
 
 #include "libpq/pqsignal.h"
+#include "postmaster/dmagent_api.h"
 #include "postmaster/dmagent.h"
 #include "postmaster/fork_process.h"
 #include "postmaster/postmaster.h"
@@ -29,11 +30,17 @@
 #include "storage/pg_shmem.h"
 #include "utils/guc.h"
 #include "cdb/cdbvars.h"
-#include "cdb/deepmesh.h"
 
 static bool DeepMeshAgentStartedByMe = false;
 
 #define DMAGENT_LOCK_FILE	"/tmp/dmagent_pid_lock"
+
+static dm_agent_addr_port_t dmagents[1024];
+static int dmagent_num = 0;
+static uint32_t dmagent_myaddr = 0;
+static uint32_t dmagent_master_addr = 0;
+static bool dmagent_ismaster = false;
+
 
 /* Signal handlers */
 static void dmagent_quickdie(SIGNAL_ARGS);
@@ -42,6 +49,7 @@ static void dmagent_usr1(SIGNAL_ARGS);
 static void dmagent_sighup(SIGNAL_ARGS);
 
 extern char *Log_directory;
+extern bool Gp_entry_postmaster;
 
 /*
  * Main entry point for deepmesh agent process
@@ -54,7 +62,10 @@ DeepMeshAgentMain(int argc, char *argv[])
 	MyProcPid = getpid();               /* reset MyProcPid */
 	MyStartTime = time(NULL);       /* set our start time in case we call elog */
 
-	init_ps_display("deepmesh agent process", "", "", "");
+	if (Gp_entry_postmaster && Gp_role == GP_ROLE_DISPATCH)
+		init_ps_display("master deepmesh agent process", "", "", "");
+	else
+		init_ps_display("deepmesh agent process", "", "", "");
 
 	/*
 	 * Properly accept or ignore signals the postmaster might send us
@@ -88,7 +99,13 @@ DeepMeshAgentMain(int argc, char *argv[])
 	PG_SETMASK(&UnBlockSig);
 
 	/* start the real work */
-	proc_exit(dm_agent_start("dmagent.conf", Log_directory));
+	proc_exit(dm_agent_start("dmagent.conf", 
+					Log_directory,
+					dmagent_ismaster,
+					dmagents,
+					dmagent_num,
+					dmagent_myaddr,
+					dmagent_master_addr));
 }
 
 /*
@@ -105,6 +122,15 @@ DeepMeshAgent_Start()
 
 	if( INTERCONNECT_TYPE_DEEPMESH != Gp_interconnect_type)
 		return 0;
+
+	/*TODO: get myaddr, master_addr */
+
+	if (!(Gp_entry_postmaster && Gp_role == GP_ROLE_DISPATCH)){
+		/* Do not start deepmesh agent for segments in the same host as master */
+		if(dmagent_myaddr == dmagent_master_addr)
+			return 0;
+		
+	}
 
 	/* lock file check */
 	if(!DeepMeshAgentStartedByMe) {
@@ -146,6 +172,11 @@ DeepMeshAgent_Start()
 				errmsg("could not write deepmesh agent lock file \"%s\": %m", DMAGENT_LOCK_FILE)));
 		}
 		DeepMeshAgentStartedByMe = true;
+
+		if (Gp_entry_postmaster && Gp_role == GP_ROLE_DISPATCH){
+			/* TODO: In master postgres, read all segments info */
+			dmagent_ismaster = true;
+		}
 	}
 
 #ifdef EXEC_BACKEND
