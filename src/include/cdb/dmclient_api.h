@@ -45,7 +45,7 @@ struct dm_ep_t {
 #define DM_CONFIG_ADD           0x01
 #define DM_CONFIG_REMOVE        0x02
 typedef struct dm_agent_cfg_t {
-    uint32_t         addr;       // agent address
+    char             addr[INET6_ADDRSTRLEN];       // agent address
     uint16_t         port;       // agent listen port
     uint8_t          action;     // add or remove
 } dm_agent_cfg_t;

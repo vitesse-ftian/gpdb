@@ -96,8 +96,9 @@ static void doSendStopMessageDeepMesh(ChunkTransportState *transportStates, int1
 void
 InitMotionDeepMesh()
 {
+/*
     if( 0 != dm_connect(Gp_interconnect_deepmesh_path)) {
-        /* report error */
+        // report error
         ereport(ERROR, (errcode(ERRCODE_GP_INTERCONNECTION_ERROR),
                 errmsg("Interconnect error initalizing DeepMesh motion layer."),
                 errdetail("connect to agent with path %s errno %d errmsg %s",
@@ -105,7 +106,7 @@ InitMotionDeepMesh()
     } else if (gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG) {
         ereport(DEBUG1, (errmsg("Interconnect DeepMesh: initialization successfully")));
     }
-
+*/
     return;
 }
 
@@ -114,10 +115,11 @@ void
 CleanupMotionDeepMesh(void)
 {
     /* disconnect with DeepMesh agent*/
+/*
     dm_disconnect();
     if (gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG)
         ereport(DEBUG1, (errmsg("Interconnect DeepMesh: disconnect successfully")));
-
+*/
     return;
 }
 
@@ -678,6 +680,17 @@ SetupDeepMeshInterconnect(EState *estate)
         ereport(FATAL, (errmsg("SetupTCPInterconnect: no slice table ?")));
     }
 
+    // Make the connection to dm agent
+    if( 0 != dm_connect(Gp_interconnect_deepmesh_path)) {
+        /* report error */
+        ereport(ERROR, (errcode(ERRCODE_GP_INTERCONNECTION_ERROR),
+                errmsg("Interconnect DeepMesh error."),
+                errdetail("connect to agent with path %s failed. errno %d errmsg %s",
+                          Gp_interconnect_deepmesh_path, dm_errno(), dm_errmsg())));
+    } else if (gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG) {
+        ereport(DEBUG1, (errmsg("Interconnect DeepMesh: connect to deepmesh agent successfully")));
+    }
+
     estate->interconnect_context = palloc0(sizeof(ChunkTransportState));
 
     estate->interconnect_context->estate = estate;
@@ -919,6 +932,11 @@ TeardownDeepMeshInterconnect(ChunkTransportState *transportStates,
     dm_set_cancel_checker(NULL, NULL);
 
     pfree(transportStates);
+
+    // disconnect from the deepmesh agent
+    dm_disconnect();
+    if (gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG)
+        ereport(DEBUG1, (errmsg("Interconnect DeepMesh: disconnect from the deepemsh agent")));
 
     if (forceEOS)
         RESUME_INTERRUPTS();

@@ -28,19 +28,15 @@
 #include "postmaster/postmaster.h"
 #include "storage/ipc.h"
 #include "storage/pg_shmem.h"
+#include "storage/proc.h"
 #include "utils/guc.h"
+#include "utils/resowner.h"
 #include "cdb/cdbvars.h"
+#include "cdb/cdbutil.h"
 
 static bool DeepMeshAgentStartedByMe = false;
 
 #define DMAGENT_LOCK_FILE	"/tmp/dmagent_pid_lock"
-
-static dm_agent_addr_port_t dmagents[1024];
-static int dmagent_num = 0;
-static uint32_t dmagent_myaddr = 0;
-static uint32_t dmagent_master_addr = 0;
-static bool dmagent_ismaster = false;
-
 
 /* Signal handlers */
 static void dmagent_quickdie(SIGNAL_ARGS);
@@ -48,8 +44,12 @@ static void dmagent_shutdown(SIGNAL_ARGS);
 static void dmagent_usr1(SIGNAL_ARGS);
 static void dmagent_sighup(SIGNAL_ARGS);
 
+static void read_agent_cfgs(dm_agent_addr_port_t *agents, int *agent_num);
+
 extern char *Log_directory;
 extern bool Gp_entry_postmaster;
+
+static char *knownDatabase = "postgres";
 
 /*
  * Main entry point for deepmesh agent process
@@ -58,14 +58,29 @@ extern bool Gp_entry_postmaster;
 NON_EXEC_STATIC void
 DeepMeshAgentMain(int argc, char *argv[])
 {
+	dm_agent_addr_port_t dmagents[1024];
+	int dmagent_num = 0;
+	bool dmagent_ismaster = false; 
+	char dmagent_master_addr[INET6_ADDRSTRLEN];
+	sigjmp_buf      local_sigjmp_buf; 
+	char       *fullpath;
+
 	IsUnderPostmaster = true;   /* we are a postmaster subprocess now */
 	MyProcPid = getpid();               /* reset MyProcPid */
 	MyStartTime = time(NULL);       /* set our start time in case we call elog */
 
-	if (Gp_entry_postmaster && Gp_role == GP_ROLE_DISPATCH)
+	/* Stay away from PMChildSlot */
+	MyPMChildSlot = -1;
+ 
+	if (Gp_entry_postmaster && Gp_role == GP_ROLE_DISPATCH) {
 		init_ps_display("master deepmesh agent process", "", "", "");
-	else
+		dmagent_ismaster = true;
+	}
+	else {
 		init_ps_display("deepmesh agent process", "", "", "");
+	}
+
+	SetProcessingMode(InitProcessing);
 
 	/*
 	 * Properly accept or ignore signals the postmaster might send us
@@ -95,17 +110,129 @@ DeepMeshAgentMain(int argc, char *argv[])
 #else
         BlockSig &= ~(sigmask(SIGQUIT));
 #endif
+	/* Early initialization */ 
+	BaseInit();
 
+ 	/* See InitPostgres()... */ 
+	InitProcess(); 
+	InitBufferPoolBackend(); 
+	InitXLOGAccess(); 
+
+	SetProcessingMode(NormalProcessing); 
+
+	/* 
+	 * If an exception is encountered, processing resumes here.
+	 *
+	 * See notes in postgres.c about the design of this coding.
+	 */
+	if (sigsetjmp(local_sigjmp_buf, 1) != 0) { 
+		/* Prevents interrupts while cleaning up */ 
+		HOLD_INTERRUPTS(); 
+
+		/* Report the error to the server log */ 
+		EmitErrorReport();
+
+		/*
+		 * We can now go away.  Note that because we'll call InitProcess, a
+		 * callback will be registered to do ProcKill, which will clean up
+		 * necessary state.
+		 */ 
+		proc_exit(0); 
+	}
+
+	/* We can now handle ereport(ERROR) */ 
+	PG_exception_stack = &local_sigjmp_buf; 
 	PG_SETMASK(&UnBlockSig);
 
+	/* 
+	 * Create a resource owner to keep track of our resources (currently only 
+	 * buffer pins). 
+	 */
+        CurrentResourceOwner = ResourceOwnerCreate(NULL, "DmAgent");
+
+	/*
+	 * Add my PGPROC struct to the ProcArray.
+	 * 
+	 * Once I have done this, I am visible to other backends!
+	 */ 
+	InitProcessPhase2();
+
+	/* 
+	 * Initialize my entry in the shared-invalidation manager's array of
+	 * per-backend data.
+	 *
+	 * Sets up MyBackendId, a unique backend identifier. 
+	 */
+	MyBackendId = InvalidBackendId;
+	
+	SharedInvalBackendInit(false);
+
+	if (MyBackendId > MaxBackends || MyBackendId <= 0) 
+		elog(FATAL, "bad backend id: %d", MyBackendId);
+
+        /*
+         * bufmgr needs another initialization call too
+         */
+        InitBufferPoolBackend();
+
+        /* heap access requires the rel-cache */
+        RelationCacheInitialize();
+        InitCatalogCache();
+
+        /*
+         * It's now possible to do real access to the system catalogs.
+         *
+         * Load relcache entries for the system catalogs.  This must create at
+         * least the minimum set of "nailed-in" cache entries.
+         */
+        RelationCacheInitializePhase2();
+
+        /*
+         * In order to access the catalog, we need a database, and a
+         * tablespace; our access to the heap is going to be slightly
+         * limited, so we'll just use some defaults.
+         */
+        if (!FindMyDatabase(knownDatabase, &MyDatabaseId, &MyDatabaseTableSpace))
+                ereport(FATAL,
+                                (errcode(ERRCODE_UNDEFINED_DATABASE),
+                                 errmsg("database \"%s\" does not exit", knownDatabase)));
+
+        /* Now we can mark our PGPROC entry with the database ID */
+        /* (We assume this is an atomic store so no lock is needed) */
+        MyProc->databaseId = MyDatabaseId;
+
+        fullpath = GetDatabasePath(MyDatabaseId, MyDatabaseTableSpace);
+
+        SetDatabasePath(fullpath);
+
+        RelationCacheInitializePhase3();
+
+	if (Gp_entry_postmaster && Gp_role == GP_ROLE_DISPATCH) {
+		init_ps_display("master deepmesh agent process", "", "", "");
+		dmagent_ismaster = true;
+		read_agent_cfgs(dmagents, &dmagent_num);
+	}
+	else {
+		init_ps_display("deepmesh agent process", "", "", "");
+	}
+
+	/* Lose the postmaster's on-exit routines */
+	on_exit_reset();
+
+	/* Drop our connection to postmaster's shared memory */
+	//PGSharedMemoryDetach();
+
 	/* start the real work */
-	proc_exit(dm_agent_start("dmagent.conf", 
+	int ret = dm_agent_start("dmagent.conf", 
 					Log_directory,
 					dmagent_ismaster,
 					dmagents,
 					dmagent_num,
-					dmagent_myaddr,
-					dmagent_master_addr));
+					dmagent_master_addr);
+
+	ResourceOwnerRelease(CurrentResourceOwner,
+				RESOURCE_RELEASE_BEFORE_LOCKS, false, true);
+	exit(ret);
 }
 
 /*
@@ -123,17 +250,14 @@ DeepMeshAgent_Start()
 	if( INTERCONNECT_TYPE_DEEPMESH != Gp_interconnect_type)
 		return 0;
 
-	/*TODO: get myaddr, master_addr */
-
-	if (!(Gp_entry_postmaster && Gp_role == GP_ROLE_DISPATCH)){
-		/* Do not start deepmesh agent for segments in the same host as master */
-		if(dmagent_myaddr == dmagent_master_addr)
-			return 0;
-		
-	}
-
 	/* lock file check */
 	if(!DeepMeshAgentStartedByMe) {
+		if (!(Gp_entry_postmaster && Gp_role == GP_ROLE_DISPATCH)){
+			/* TODO: Do not start deepmesh agent for segments in the same host as master */
+			elog(DEBUG1, "qdHostname %s", qdHostname);
+			return 0;
+		}
+
 		/* Did not start DM agent. Try to do it by checking lock file */
 		int fd = open(DMAGENT_LOCK_FILE, O_RDWR | O_CREAT | O_EXCL, 0600);
 		if(fd < 0 && EEXIST == errno) {
@@ -146,7 +270,7 @@ DeepMeshAgent_Start()
 					if(count > 0) {
 						char *endptr;
 						long pid = strtol(buffer, &endptr, 10);
-						elog(DEBUG5, "Another postmaster %ld has already started deepmesh agent", pid);
+						elog(DEBUG1, "Another postmaster %ld has already started deepmesh agent", pid);
 					}
 					close(fd);
 				}
@@ -173,10 +297,6 @@ DeepMeshAgent_Start()
 		}
 		DeepMeshAgentStartedByMe = true;
 
-		if (Gp_entry_postmaster && Gp_role == GP_ROLE_DISPATCH){
-			/* TODO: In master postgres, read all segments info */
-			dmagent_ismaster = true;
-		}
 	}
 
 #ifdef EXEC_BACKEND
@@ -194,12 +314,6 @@ DeepMeshAgent_Start()
 			/* in postmaster child ... */
 			/* Close the postmaster's sockets */
 			ClosePostmasterPorts(true);
-
-			/* Lose the postmaster's on-exit routines */
-			on_exit_reset();
-
-			/* Drop our connection to postmaster's shared memory, as well */
-			PGSharedMemoryDetach();
 
 			/* do the work */
 			DeepMeshAgentMain(0, NULL);
@@ -224,6 +338,88 @@ void DeepMeshAgent_Cleanup()
 	if( DeepMeshAgentStartedByMe) {
 		unlink(DMAGENT_LOCK_FILE);
 	}
+}
+
+static void read_agent_cfgs(dm_agent_addr_port_t *agents, int *agent_count)
+{
+	/* Read DB schema */
+	for(;;) {
+		CdbComponentDatabases *dbs = getCdbComponentDatabases(); 
+
+		if (dbs == NULL || dbs->total_entry_dbs <= 0 || dbs->total_segment_dbs <= 0) {
+			elog(DEBUG1, "schema not populated while building deepmesh agent config");
+			sleep(3);
+			continue;
+		} 
+
+		HASHCTL info;
+		int  *dupCount;
+		bool found;
+		char key[INET6_ADDRSTRLEN];
+
+		/* Set key and entry sizes. */
+		MemSet(&info, 0, sizeof(info));
+		info.keysize = INET6_ADDRSTRLEN;
+		info.entrysize = sizeof(int);
+
+		HTAB *ipHash = hash_create("HostIpHash", 256, &info, HASH_ELEM);
+
+		for( int i=0; i < dbs->total_entry_dbs; i++) {
+			strncpy(key, dbs->entry_db_info[i].hostip, INET6_ADDRSTRLEN);
+			dupCount = (int *)hash_search(ipHash, key, HASH_ENTER, &found); 
+			if (found) 
+				(*dupCount)++; 
+			else {
+				elog(DEBUG1, "Found unique entry db %d dbid %d segindex %d role %c hostname %s hostip %s, hostSegs %d",
+					i, dbs->entry_db_info[i].dbid,
+					dbs->entry_db_info[i].segindex,
+					dbs->entry_db_info[i].role,
+					dbs->entry_db_info[i].hostname, 
+					dbs->entry_db_info[i].hostip, 
+					dbs->entry_db_info[i].hostSegs);
+				(*dupCount) = 1; 
+				// TODO: Should change to string for ipv6
+				strncpy(agents[*agent_count].addr, key, INET6_ADDRSTRLEN);
+				agents[*agent_count].port = 3333;
+				(*agent_count)++;
+			}
+		}
+
+		for( int i=0; i < dbs->total_segment_dbs; i++) { 
+			strncpy(key, dbs->segment_db_info[i].hostip, INET6_ADDRSTRLEN);
+			dupCount = (int *)hash_search(ipHash, key, HASH_ENTER, &found); 
+			if (found) 
+				(*dupCount)++; 
+			else {
+				elog(DEBUG1, "Found unique segment %d dbid %d segindex %d role %c hostname %s hostip %s, hostSegs %d",
+					i, dbs->segment_db_info[i].dbid,
+					dbs->segment_db_info[i].segindex,
+					dbs->segment_db_info[i].role,
+					dbs->segment_db_info[i].hostname, 
+					dbs->segment_db_info[i].hostip, 
+					dbs->segment_db_info[i].hostSegs);
+				(*dupCount) = 1; 
+				// TODO: Should change to string for ipv6
+				strncpy(agents[*agent_count].addr, key, INET6_ADDRSTRLEN);
+				agents[*agent_count].port = 3333;
+				(*agent_count)++;
+			}
+		}
+
+		if(gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG) {
+			for(int i=0; i<*agent_count; i++) {
+				// TODO: change after ipv6
+				elog(DEBUG1, "Constructed Deepmesh agent %i: host ip %s port %d",
+					i, agents[i].addr, agents[i].port);
+			}
+		}
+
+		hash_destroy(ipHash);
+		return;
+	}
+
+	// should never be reached.
+	return;
 }
 
 #ifdef EXEC_BACKEND

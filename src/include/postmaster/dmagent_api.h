@@ -2,7 +2,7 @@
 #define DMAGENT_API_H
 
 typedef struct dm_agent_addr_port_t {
-    uint32_t         addr;       // remote agent address
+    char             addr[INET6_ADDRSTRLEN];  // remote agent address
     uint16_t         port;       // remote agent listen port
 } dm_agent_addr_port_t;
 
@@ -12,11 +12,10 @@ typedef struct dm_agent_addr_port_t {
   */
 int dm_agent_start(char *cfg_fn,
                    char *log_path,
-                   bool is_master,
+                   int is_master,
                    dm_agent_addr_port_t *agents,
                    int  agent_count,
-                   uint32_t my_addr,
-                   uint32_t master_addr);
+                   char master_addr[INET6_ADDRSTRLEN]);
 
 /**
   * set to 1 if we need to shutdown DM agent.

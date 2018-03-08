@@ -1502,11 +1502,6 @@ PostmasterMain(int argc, char *argv[])
 	SysLoggerPID = SysLogger_Start();
 
 	/*
-	 * If enabled, start up deepmesh agent subprocess
-	 */
-	DeepMeshAgentPID = DeepMeshAgent_Start();
-
-	/*
 	 * Reset whereToSendOutput from DestDebug (its starting state) to
 	 * DestNone. This stops ereport from sending log messages to stderr unless
 	 * Log_destination permits.  We don't do this until the postmaster is
@@ -2484,15 +2479,6 @@ ServerLoop(void)
 					 (long)SysLoggerPID);
 		}
 
-		/* We might have lost the deepmesh agent, try to start a new one */
-		if (DeepMeshAgentPID == 0)
-		{
-			DeepMeshAgentPID = DeepMeshAgent_Start();
-			if (0 != DeepMeshAgentPID && Debug_print_server_processes)
-				elog(LOG,"restarted 'deepmesh agent process' as pid %ld",
-					 (long)DeepMeshAgentPID);
-		}
-
 		if ( isFullPostmasterAndDatabaseIsAllowed())
 		{
 			/*
@@ -2572,6 +2558,18 @@ ServerLoop(void)
 						elog(LOG,"started '%s' as pid %ld",
 							 subProc->procName, (long)subProc->pid);
 				}
+			}
+			
+			/* We start deepmesh agent after all other backend servers are started */
+			if (DeepMeshAgentPID == 0 && pmState == PM_RUN)
+			{
+				elog(LOG,"try to start 'deepmesh agent process'");
+
+				Debug_print_server_processes = true;
+				DeepMeshAgentPID = DeepMeshAgent_Start();
+				if (0 != DeepMeshAgentPID && Debug_print_server_processes)
+					elog(LOG,"restarted 'deepmesh agent process' as pid %ld",
+					 	(long)DeepMeshAgentPID);
 			}
 		}
 
