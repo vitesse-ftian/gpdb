@@ -515,6 +515,8 @@ static void checkDataDir(void);
 static void checkPgDir(const char *dir);
 static void checkPgDir2(const char *dir);
 
+static void checkMasterAddr(void);
+
 #ifdef USE_TEST_UTILS
 static void SimExProcExit(void);
 #endif /* USE_TEST_UTILS */
@@ -1134,6 +1136,9 @@ PostmasterMain(int argc, char *argv[])
 	/* And switch working directory into it */
 	ChangeToDataDir();
 
+	/* Check master address */
+	checkMasterAddr();
+
 	/*
      * CDB: Decouple NBuffers from MaxBackends.  The entry db doesn't benefit
      * from buffers in excess of the global catalog size; this is typically
@@ -1683,6 +1688,40 @@ getInstallationPaths(const char *argv0)
 	 * XXX is it worth similarly checking the share/ directory?  If the lib/
 	 * directory is there, then share/ probably is too.
 	 */
+}
+
+static void 
+checkMasterAddr(void)
+{
+	if('\0' == gp_master_address[0])
+		return;
+
+	struct in_addr in4;	
+	if( 0 == inet_pton(AF_INET, gp_master_address, &(in4))) {
+		elog(DEBUG1, "The segment is not in same host as master. Master ip address is %s", gp_master_address);
+		return;
+	}
+
+	struct in6_addr in6;
+	if( 0 == inet_pton(AF_INET6, gp_master_address, &(in6))) {
+		elog(DEBUG1, "The segment is not in same host as master. Master ip address is %s", gp_master_address);
+		return;
+	}
+
+	/* Then it's hostname, convert it to first ip address */
+	struct hostent *he;
+	struct in_addr **addr_list;
+
+	if ((he = gethostbyname(gp_master_address)) != NULL){
+		addr_list = (struct in_addr **) he->h_addr_list;
+		if(addr_list[0] != NULL) {
+			elog(DEBUG1, "The segment is not in same host as master. Master hostname is %s", gp_master_address);
+			return;
+		}
+	}
+
+	// Invalid master address
+	elog(FATAL, "The master address %s is not valid IP address or hostname", gp_master_address);
 }
 
 

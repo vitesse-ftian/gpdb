@@ -984,6 +984,13 @@ PG_TRY();
 			dmSessId = gp_session_id;
 
 			dmSessId = (dmSessId << 32) + queryDesc->estate->es_sliceTable->ic_instance_id;
+			/* connect to deepmesh agent first */
+			if( 0 != dm_connect(Gp_interconnect_deepmesh_path)) {
+				ereport(ERROR, (errcode(ERRCODE_GP_INTERCONNECTION_ERROR),
+					errmsg("Failed to connect to deepmesh agent. errorno %d errmsg %s",
+							dm_errno(), dm_errmsg())));
+			}
+
 			if( 0 != dm_sess_create(dmSessId)) {
 				ereport(ERROR, (errcode(ERRCODE_GP_INTERCONNECTION_ERROR),
 					errmsg("Create DM session id %ld errorno %d errmsg %s",

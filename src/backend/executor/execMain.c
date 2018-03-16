@@ -683,6 +683,14 @@ ExecutorStart(QueryDesc *queryDesc, int eflags)
                                 uint64 sessId = gp_session_id;
 
                                 sessId = (sessId << 32) + queryDesc->estate->es_sliceTable->ic_instance_id;
+				
+				/* connect to dmagent first */
+				if( 0 != dm_connect(Gp_interconnect_deepmesh_path)) {
+                                        ereport(ERROR, (errcode(ERRCODE_GP_INTERCONNECTION_ERROR),
+                                                        errmsg("Failed to connect to deepmesh agent. errorno %d errmsg %s",
+                                                                dm_errno(), dm_errmsg())));
+				}
+
                                 if( 0 != dm_sess_create(sessId)) {
                                         ereport(ERROR, (errcode(ERRCODE_GP_INTERCONNECTION_ERROR),
                                                         errmsg("Create DM session id %ld errorno %d errmsg %s",

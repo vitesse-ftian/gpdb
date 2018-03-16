@@ -146,8 +146,12 @@ class CmdArgs(list):
         @param segments - segments (from GpArray.getSegmentsByHostName)
         """
         for seg in segments:
-            cfg_array = repr(seg).split('|')[0:-1]
-            self.append("-D '%s'" % ('|'.join(cfg_array) + '|'))
+            cfg_array = repr(seg).split('|')
+            # Set the catdirs to empty
+            cfg_array_2 = cfg_array[0:-2]
+            cfg_array_2.append("")
+            cfg_array_2.append(cfg_array[-1])
+            self.append("-D '%s'" % ('|'.join(cfg_array_2)))
         return self
 
 
@@ -217,6 +221,14 @@ class PgCtlBackendOptions(CmdArgs):
         @param content: content id
         """
         self.extend(["-i", "-M", str(mode), "--gp_contentid="+str(content)])
+        return self
+
+    def set_masteraddr(self, masteraddr):
+        """
+        @param masteraddr: master host address is segment is in different host as master.
+        """
+        if masteraddr:
+            self.extend(["-i", "--gp_master_addr="+str(masteraddr)])
         return self
 
     #
@@ -383,10 +395,12 @@ class SegmentStart(Command):
         content = gpdb.getSegmentContentId()
         port    = gpdb.getSegmentPort()
         datadir = gpdb.getSegmentDataDirectory()
+        masteraddr = gpdb.getSegmentMasterAddr()
 
         # build backend options
         b = PgCtlBackendOptions(port, dbid, numContentsInCluster)
         b.set_segment(mirrormode, content)
+        b.set_masteraddr(masteraddr)
         b.set_utility(utilityMode)
         b.set_special(specialMode)
 
@@ -793,6 +807,7 @@ class GpSegStartCmd(Command):
 
         if (logfileDirectory):
             cmdStr = cmdStr + " -l '" + logfileDirectory + "'"
+
         Command.__init__(self,name,cmdStr,ctxt,remoteHost)
 
 

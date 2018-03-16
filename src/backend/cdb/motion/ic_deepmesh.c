@@ -934,7 +934,6 @@ TeardownDeepMeshInterconnect(ChunkTransportState *transportStates,
     pfree(transportStates);
 
     // disconnect from the deepmesh agent
-    dm_disconnect();
     if (gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG)
         ereport(DEBUG1, (errmsg("Interconnect DeepMesh: disconnect from the deepemsh agent")));
 

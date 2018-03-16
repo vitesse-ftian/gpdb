@@ -1037,6 +1037,7 @@ extern GpId GpIdentity;
 #define UNINITIALIZED_GP_IDENTITY_VALUE (-10000)
 extern int GpStandbyDbid;
 
+extern char* gp_master_address;
 
 /* Stores the listener port that this process uses to listen for incoming
  * Interconnect connections from other Motion nodes.

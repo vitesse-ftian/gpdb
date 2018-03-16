@@ -61,7 +61,6 @@ DeepMeshAgentMain(int argc, char *argv[])
 	dm_agent_addr_port_t dmagents[1024];
 	int dmagent_num = 0;
 	bool dmagent_ismaster = false; 
-	char dmagent_master_addr[INET6_ADDRSTRLEN];
 	sigjmp_buf      local_sigjmp_buf; 
 	char       *fullpath;
 
@@ -208,19 +207,18 @@ DeepMeshAgentMain(int argc, char *argv[])
         RelationCacheInitializePhase3();
 
 	if (Gp_entry_postmaster && Gp_role == GP_ROLE_DISPATCH) {
-		init_ps_display("master deepmesh agent process", "", "", "");
-		dmagent_ismaster = true;
 		read_agent_cfgs(dmagents, &dmagent_num);
 	}
-	else {
-		init_ps_display("deepmesh agent process", "", "", "");
-	}
+
+	/* release the resource after reading cfgs from shared memeory*/
+	ResourceOwnerRelease(CurrentResourceOwner,
+				RESOURCE_RELEASE_BEFORE_LOCKS, false, true);
 
 	/* Lose the postmaster's on-exit routines */
 	on_exit_reset();
 
 	/* Drop our connection to postmaster's shared memory */
-	//PGSharedMemoryDetach();
+	PGSharedMemoryDetach();
 
 	/* start the real work */
 	int ret = dm_agent_start("dmagent.conf", 
@@ -228,10 +226,7 @@ DeepMeshAgentMain(int argc, char *argv[])
 					dmagent_ismaster,
 					dmagents,
 					dmagent_num,
-					dmagent_master_addr);
-
-	ResourceOwnerRelease(CurrentResourceOwner,
-				RESOURCE_RELEASE_BEFORE_LOCKS, false, true);
+					gp_master_address);
 	exit(ret);
 }
 
@@ -253,9 +248,10 @@ DeepMeshAgent_Start()
 	/* lock file check */
 	if(!DeepMeshAgentStartedByMe) {
 		if (!(Gp_entry_postmaster && Gp_role == GP_ROLE_DISPATCH)){
-			/* TODO: Do not start deepmesh agent for segments in the same host as master */
-			elog(DEBUG1, "qdHostname %s", qdHostname);
-			return 0;
+			if('\0' == gp_master_address[0]) {
+				/* This segment is in same host as master */
+				return 0;
+			}
 		}
 
 		/* Did not start DM agent. Try to do it by checking lock file */
@@ -352,24 +348,16 @@ static void read_agent_cfgs(dm_agent_addr_port_t *agents, int *agent_count)
 			continue;
 		} 
 
-		HASHCTL info;
-		int  *dupCount;
-		bool found;
-		char key[INET6_ADDRSTRLEN];
-
-		/* Set key and entry sizes. */
-		MemSet(&info, 0, sizeof(info));
-		info.keysize = INET6_ADDRSTRLEN;
-		info.entrysize = sizeof(int);
-
-		HTAB *ipHash = hash_create("HostIpHash", 256, &info, HASH_ELEM);
-
 		for( int i=0; i < dbs->total_entry_dbs; i++) {
-			strncpy(key, dbs->entry_db_info[i].hostip, INET6_ADDRSTRLEN);
-			dupCount = (int *)hash_search(ipHash, key, HASH_ENTER, &found); 
-			if (found) 
-				(*dupCount)++; 
-			else {
+			bool found = false;
+
+			for(int j=0; j<*agent_count; j++) {
+				if(strncpy(agents[j].addr, dbs->entry_db_info[i].hostip, INET6_ADDRSTRLEN) == 0) {
+					found = true;
+					break;
+				}
+			}
+			if (!found) {
 				elog(DEBUG1, "Found unique entry db %d dbid %d segindex %d role %c hostname %s hostip %s, hostSegs %d",
 					i, dbs->entry_db_info[i].dbid,
 					dbs->entry_db_info[i].segindex,
@@ -377,20 +365,22 @@ static void read_agent_cfgs(dm_agent_addr_port_t *agents, int *agent_count)
 					dbs->entry_db_info[i].hostname, 
 					dbs->entry_db_info[i].hostip, 
 					dbs->entry_db_info[i].hostSegs);
-				(*dupCount) = 1; 
-				// TODO: Should change to string for ipv6
-				strncpy(agents[*agent_count].addr, key, INET6_ADDRSTRLEN);
+				strncpy(agents[*agent_count].addr, dbs->entry_db_info[i].hostip, INET6_ADDRSTRLEN);
 				agents[*agent_count].port = 3333;
 				(*agent_count)++;
 			}
 		}
 
 		for( int i=0; i < dbs->total_segment_dbs; i++) { 
-			strncpy(key, dbs->segment_db_info[i].hostip, INET6_ADDRSTRLEN);
-			dupCount = (int *)hash_search(ipHash, key, HASH_ENTER, &found); 
-			if (found) 
-				(*dupCount)++; 
-			else {
+			bool found = false;
+
+			for(int j=0; j<*agent_count; j++) {
+				if(strncpy(agents[j].addr, dbs->segment_db_info[i].hostip, INET6_ADDRSTRLEN) == 0) {
+					found = true;
+					break;
+				}
+			}
+			if (!found) {
 				elog(DEBUG1, "Found unique segment %d dbid %d segindex %d role %c hostname %s hostip %s, hostSegs %d",
 					i, dbs->segment_db_info[i].dbid,
 					dbs->segment_db_info[i].segindex,
@@ -398,9 +388,7 @@ static void read_agent_cfgs(dm_agent_addr_port_t *agents, int *agent_count)
 					dbs->segment_db_info[i].hostname, 
 					dbs->segment_db_info[i].hostip, 
 					dbs->segment_db_info[i].hostSegs);
-				(*dupCount) = 1; 
-				// TODO: Should change to string for ipv6
-				strncpy(agents[*agent_count].addr, key, INET6_ADDRSTRLEN);
+				strncpy(agents[*agent_count].addr, dbs->segment_db_info[i].hostip, INET6_ADDRSTRLEN);
 				agents[*agent_count].port = 3333;
 				(*agent_count)++;
 			}
@@ -408,13 +396,11 @@ static void read_agent_cfgs(dm_agent_addr_port_t *agents, int *agent_count)
 
 		if(gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG) {
 			for(int i=0; i<*agent_count; i++) {
-				// TODO: change after ipv6
 				elog(DEBUG1, "Constructed Deepmesh agent %i: host ip %s port %d",
 					i, agents[i].addr, agents[i].port);
 			}
 		}
 
-		hash_destroy(ipHash);
 		return;
 	}
 

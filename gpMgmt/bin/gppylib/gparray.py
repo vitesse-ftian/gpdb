@@ -172,19 +172,23 @@ class GpDB:
 
         # Todo: Remove old dead code
         self.valid = (status == 'u')
+        
+        # Hold master address
+        self.masteraddr = ""
 
     # --------------------------------------------------------------------
     def __str__(self):
         """
         Construct a printable string representation of a GpDB
         """
-        return "%s:%s:content=%s:dbid=%s:mode=%s:status=%s" % (
+        return "%s:%s:content=%s:dbid=%s:mode=%s:status=%s:masteraddr=%s" % (
             self.hostname,
             self.datadir,
             self.content,
             self.dbid,
             self.mode,
-            self.status
+            self.status,
+            self.masteraddr
             )
 
     #
@@ -248,7 +252,7 @@ class GpDB:
             if fsoid not in [SYSTEM_FILESPACE]:
                 filespaces.append("%d:%s" % (fsoid, self.__filespaces[fsoid]))
 
-        return '%d|%d|%s|%s|%s|%s|%s|%s|%d|%s|%s|%s|%s' % (
+        return '%d|%d|%s|%s|%s|%s|%s|%s|%d|%s|%s|%s|%s|%s' % (
             self.dbid,
             self.content,
             self.role,
@@ -261,7 +265,8 @@ class GpDB:
             self.replicationPort,
             self.datadir,
             ','.join(filespaces),  # this is rather ugly
-            ','.join(self.catdirs) if self.catdirs else []
+            ','.join(self.catdirs) if self.catdirs else [],
+            self.masteraddr
             )
 
     # --------------------------------------------------------------------
@@ -300,6 +305,7 @@ class GpDB:
             replicationPort = None
             filespaces      = ""
             catdirs         = ""
+            masteraddr      = ""
 
         # Catalog 3.4 format: 12 fields
         elif len(tup) == 12:
@@ -317,6 +323,7 @@ class GpDB:
             datadir         = tup[10]  # from the pg_filespace_entry table
             filespaces      = tup[11]
             catdirs         = ""
+            masteraddr      = ""
 
         # Catalog 4.0+: 13 fields
         elif len(tup) == 13:
@@ -334,6 +341,25 @@ class GpDB:
             datadir         = tup[10]  # from the pg_filespace_entry table
             filespaces      = tup[11]
             catdirs         = tup[12]
+            masteraddr      = ""
+
+        # Catalog for DeepMesh agent support: 14 fields
+        elif len(tup) == 14:
+            # This describes the gp_segment_configuration catalog (3.4+)
+            dbid            = int(tup[0])
+            content         = int(tup[1])
+            role            = tup[2]
+            preferred_role  = tup[3]
+            mode            = tup[4]
+            status          = tup[5]
+            hostname        = tup[6]
+            address         = tup[7]
+            port            = int(tup[8])
+            replicationPort = tup[9]
+            datadir         = tup[10]  # from the pg_filespace_entry table
+            filespaces      = tup[11]
+            catdirs         = tup[12]
+            masteraddr      = tup[13]
         else:
             raise Exception("GpDB unknown input format: %s" % s)
 
@@ -349,6 +375,8 @@ class GpDB:
                     port            = port,
                     datadir         = datadir,
                     replicationPort = replicationPort)
+
+        gpdb.masteraddr = masteraddr
 
         # Add in filespace information, if present
         for fs in filespaces.split(","):
@@ -569,6 +597,13 @@ class GpDB:
 
         """
         return self.address
+
+    def getSegmentMasterAddr(self):
+        """
+        Returns the network address of the master.
+
+        """
+        return self.masteraddr
 
     def getSegmentDataDirectory(self):
         """
@@ -1223,6 +1258,11 @@ class GpArray:
         if self.master is None:
             logger.error("FATAL - no master dbs defined!")
             raise Exception("Error: GpArray() - no master dbs defined")
+
+        # Set Master Address in each segment if the segment has different address as master
+        for segdb in segments:
+            if segdb.address != self.master.address:
+                segdb.masteraddr = self.master.address
 
     def __str__(self):
         return "Master: %s\nStandby: %s\nSegments: %s" % (str(self.master),

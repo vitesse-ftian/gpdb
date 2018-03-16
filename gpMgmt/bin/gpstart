@@ -41,7 +41,6 @@ except ImportError, e:
 DEFAULT_NUM_WORKERS = 64
 logger = get_default_logger()
 
-
 # ---------------------------------------------------------------
 class GpStart:
     ######
@@ -527,7 +526,7 @@ class GpStart:
 
         logger.debug("gp_segment_configuration indicates following valid segments")
         for seg in segs:
-            logger.debug("SegDB: %s" % seg)
+            logger.debug("SegDB: %s" % str(seg))
 
         # segments marked down
         invalid_segs = self.gparray.get_invalid_segdbs()

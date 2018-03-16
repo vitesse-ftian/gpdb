@@ -15,7 +15,7 @@ int dm_agent_start(char *cfg_fn,
                    int is_master,
                    dm_agent_addr_port_t *agents,
                    int  agent_count,
-                   char master_addr[INET6_ADDRSTRLEN]);
+                   char *master_addr);
 
 /**
   * set to 1 if we need to shutdown DM agent.

@@ -5140,6 +5140,16 @@ struct config_string ConfigureNamesString_gp[] =
 	},
 
 	{
+		{"gp_master_addr", PGC_BACKEND, GP_WORKER_IDENTITY,
+			gettext_noop("IP Address of master database."),
+			NULL,
+			GUC_NOT_IN_SAMPLE | GUC_DISALLOW_IN_FILE
+		},
+		&gp_master_address,
+		"", NULL, NULL
+	},
+
+	{
 		{"gp_session_role", PGC_BACKEND, GP_WORKER_IDENTITY,
 			gettext_noop("Reports the default role for the session."),
 			gettext_noop("Valid values are DISPATCH, EXECUTE, and UTILITY."),
