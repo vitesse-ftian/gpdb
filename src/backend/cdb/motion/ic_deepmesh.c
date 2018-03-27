@@ -115,11 +115,9 @@ void
 CleanupMotionDeepMesh(void)
 {
     /* disconnect with DeepMesh agent*/
-/*
     dm_disconnect();
     if (gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG)
         ereport(DEBUG1, (errmsg("Interconnect DeepMesh: disconnect successfully")));
-*/
     return;
 }
 
@@ -686,7 +684,7 @@ SetupDeepMeshInterconnect(EState *estate)
         ereport(ERROR, (errcode(ERRCODE_GP_INTERCONNECTION_ERROR),
                 errmsg("Interconnect DeepMesh error."),
                 errdetail("connect to agent with path %s failed. errno %d errmsg %s",
-                          Gp_interconnect_deepmesh_path, dm_errno(), dm_errmsg())));
+                          Gp_interconnect_deepmesh_path, errno, strerror(errno))));
     } else if (gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG) {
         ereport(DEBUG1, (errmsg("Interconnect DeepMesh: connect to deepmesh agent successfully")));
     }
@@ -786,8 +784,8 @@ TeardownDeepMeshInterconnect(ChunkTransportState *transportStates,
     Slice	   *mySlice;
     MotionConn *conn;
 
-    if (transportStates->sliceTable == NULL) {
-        elog(LOG, "TeardownDeepMeshInterconnect: missing slice table.");
+    if ( NULL == transportStates || transportStates->sliceTable == NULL) {
+        elog(LOG, "TeardownDeepMeshInterconnect: missing transport state or slice table.");
         return;
     }
 

@@ -352,7 +352,7 @@ static void read_agent_cfgs(dm_agent_addr_port_t *agents, int *agent_count)
 			bool found = false;
 
 			for(int j=0; j<*agent_count; j++) {
-				if(strncpy(agents[j].addr, dbs->entry_db_info[i].hostip, INET6_ADDRSTRLEN) == 0) {
+				if(strcmp(agents[j].addr, dbs->entry_db_info[i].hostip) == 0) {
 					found = true;
 					break;
 				}
@@ -375,7 +375,7 @@ static void read_agent_cfgs(dm_agent_addr_port_t *agents, int *agent_count)
 			bool found = false;
 
 			for(int j=0; j<*agent_count; j++) {
-				if(strncpy(agents[j].addr, dbs->segment_db_info[i].hostip, INET6_ADDRSTRLEN) == 0) {
+				if(strcmp(agents[j].addr, dbs->segment_db_info[i].hostip) == 0) {
 					found = true;
 					break;
 				}

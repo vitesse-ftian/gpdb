@@ -2602,8 +2602,6 @@ ServerLoop(void)
 			/* We start deepmesh agent after all other backend servers are started */
 			if (DeepMeshAgentPID == 0 && pmState == PM_RUN)
 			{
-				elog(LOG,"try to start 'deepmesh agent process'");
-
 				Debug_print_server_processes = true;
 				DeepMeshAgentPID = DeepMeshAgent_Start();
 				if (0 != DeepMeshAgentPID && Debug_print_server_processes)
