@@ -849,9 +849,13 @@ TeardownDeepMeshInterconnect(ChunkTransportState *transportStates,
              * to senders, we bypassed the senario by sending Stop Msgs to all stillActive senders. 
              * Note: If a receiver receives end-of-stream from , or send stop msg to a sender,
              *  the connection's stillActive will be set to false.
+             *
+             * Another fix: when sending msg to receiver and receiver does not exist, we assume
+             * it's not failure, but set connection to inactive. so don't need to send stop msg
+             * to all senders.
              */
             if(!hasError) {
-                doSendStopMessageDeepMesh(transportStates, aSlice->sliceIndex);
+                //doSendStopMessageDeepMesh(transportStates, aSlice->sliceIndex);
             }
 
             dm_ep_leave(pEntry->dmEpHdlr);
@@ -1200,6 +1204,14 @@ flushBufferDeepMesh(MotionLayerState *mlStates, ChunkTransportState *transportSt
         if(dm_errno() == DM_ERR_STOP_MSG) {
             if (gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG) {
                 elog(DEBUG1, "flushBufferDeepMesh: send to conn sid %ld sender ep %s receiver ep %s, receive a stop msg",
+                              getDmSessId(), (char*)conn->dmLocalEp.id, (char*)conn->dmPeerEp.id);
+            }
+
+            conn->stillActive = false;
+            return false;
+        } else if(dm_errno() == DM_ERR_PEER_EP_NOTEXIST) {
+            if (gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG) {
+                elog(DEBUG1, "flushBufferDeepMesh: send to conn sid %ld sender ep %s receiver ep %s, receiver ep left",
                               getDmSessId(), (char*)conn->dmLocalEp.id, (char*)conn->dmPeerEp.id);
             }
 
