@@ -34,6 +34,10 @@
 // If there is msg available, dm_send will return.
 #define DM_FLAG_SEND_CHECK_STOP    0x0002
 
+// When this flag is set, dm_agent will always send response back to client and 
+// dm_send will wait for response received or error occured
+#define DM_FLAG_SEND_SYNC          0x0004
+
 #define INVALID_HANDLE      -1
 typedef int dm_handle_t;
 
@@ -51,6 +55,8 @@ typedef struct dm_agent_cfg_t {
 } dm_agent_cfg_t;
 
 typedef void (*dm_cancel_check_func_pt)(void *param);
+typedef void (*dm_logger_func_pt)( int level, const char *fmt, ...);
+
 
 /**
  *  Retrieve last error number
@@ -122,6 +128,8 @@ const char* dm_recv(dm_handle_t h, dm_ep_t* src, int* msgsz, int flag);
  * to allow cancelling of the blocked function by interrupt etc.
  */
 void dm_set_cancel_checker(dm_cancel_check_func_pt checker, void *param);
+
+void dm_set_logger(dm_logger_func_pt logger, int log_level);
 
 /**
   * configure the agent.

@@ -86,7 +86,7 @@ static bool SendChunkDeepMesh(MotionLayerState *mlStates, ChunkTransportState *t
              ChunkTransportStateEntry *pEntry, MotionConn *conn, TupleChunkListItem tcItem, int16 motionId);
 
 static bool flushBufferDeepMesh(MotionLayerState *mlStates, ChunkTransportState *transportStates,
-             ChunkTransportStateEntry *pEntry, MotionConn *conn, int16 motionId);
+             ChunkTransportStateEntry *pEntry, MotionConn *conn, int16 motionId, bool eos);
 
 static void doSendStopMessageDeepMesh(ChunkTransportState *transportStates, int16 motNodeID);
 
@@ -484,7 +484,7 @@ sendRegisterMessages(ChunkTransportState *transportStates, ChunkTransportStateEn
             regMsg->srcSessionId = gp_session_id;
             regMsg->srcCommandCount = gp_interconnect_id;
 
-            if(0 == dm_send(conn->dmEpHdlr, &conn->dmPeerEp, (char*)regMsg, sizeof(*regMsg), DM_FLAG_WAIT_EP_JOIN)) {
+            if(0 == dm_send(conn->dmEpHdlr, &conn->dmPeerEp, (char*)regMsg, sizeof(*regMsg), DM_FLAG_WAIT_EP_JOIN|DM_FLAG_SEND_SYNC)) {
                 /* registration msg is sent successfully */
 
                 if (gp_log_interconnect >= GPVARS_VERBOSITY_VERBOSE) {
@@ -985,7 +985,7 @@ doSendStopMessageDeepMesh(ChunkTransportState *transportStates, int16 motNodeID)
 	    /* Note: we're only concerned with receivers and conection is still active here. */
         if (conn->dmEpHdlr >= 0 && mcsStarted == conn->state && conn->isReceiver && conn->stillActive) {
 
-            if( 0 != dm_send(conn->dmEpHdlr, &conn->dmPeerEp, &m, sizeof(char), 0)) {
+            if( 0 != dm_send(conn->dmEpHdlr, &conn->dmPeerEp, &m, sizeof(char), DM_FLAG_SEND_SYNC)) {
                 /* Should always sent unless there is underling dm_agent error */
                  elog(LOG, "SendStopMessage: failed on dm_send. conn sid %ld sender ep %s receiver ep %s" \
                            " errno %d errmsg %s", getDmSessId(), (char*)conn->dmLocalEp.id, (char*)conn->dmPeerEp.id,
@@ -1182,7 +1182,7 @@ SendEosDeepMesh(MotionLayerState *mlStates,
         conn = pEntry->conns + i;
 
         if (conn->dmEpHdlr >= 0 && conn->state == mcsStarted) {
-            flushBufferDeepMesh(mlStates, transportStates, pEntry, conn, motNodeID);
+            flushBufferDeepMesh(mlStates, transportStates, pEntry, conn, motNodeID, true);
         }
     }
 
@@ -1196,7 +1196,7 @@ SendEosDeepMesh(MotionLayerState *mlStates,
 /* Send all buffered data in the MotionConn to peer EP */
 static bool
 flushBufferDeepMesh(MotionLayerState *mlStates, ChunkTransportState *transportStates,
-            ChunkTransportStateEntry *pEntry, MotionConn *conn, int16 motionId)
+            ChunkTransportStateEntry *pEntry, MotionConn *conn, int16 motionId, bool eos)
 {
     if (gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG) {
         elog(DEBUG1, "flushBufferDeepMesh: start to flush data. conn sid %ld sender ep %s receiver ep %s.",
@@ -1218,7 +1218,10 @@ flushBufferDeepMesh(MotionLayerState *mlStates, ChunkTransportState *transportSt
      * block the sender until interrupted or a msg is received from receiver 
      * (we can assume that's stop msg from receiver)
      */
-    if(0 != dm_send(conn->dmEpHdlr, &conn->dmPeerEp, (char*)conn->pBuff, conn->msgSize, DM_FLAG_SEND_CHECK_STOP)) {
+    int flag = DM_FLAG_SEND_CHECK_STOP;
+    if(eos)
+        flag |= DM_FLAG_SEND_SYNC;
+    if(0 != dm_send(conn->dmEpHdlr, &conn->dmPeerEp, (char*)conn->pBuff, conn->msgSize, flag)) {
         if(dm_errno() == DM_ERR_STOP_MSG) {
             if (gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG) {
                 elog(DEBUG1, "flushBufferDeepMesh: send to conn sid %ld sender ep %s receiver ep %s, receive a stop msg",
@@ -1283,7 +1286,7 @@ SendChunkDeepMesh(MotionLayerState *mlStates, ChunkTransportState *transportStat
     }
 
     if (conn->msgSize + length > Gp_max_packet_size) {
-        if (!flushBufferDeepMesh(mlStates, transportStates, pEntry, conn, motionId))
+        if (!flushBufferDeepMesh(mlStates, transportStates, pEntry, conn, motionId, false))
             return false;
     }
     memcpy(conn->pBuff + conn->msgSize, tcItem->chunk_data, tcItem->chunk_length);
