@@ -356,6 +356,11 @@ class GpStart:
             logger.info("Clearing Master instance pid file")
             os.remove("%s/postmaster.pid" % self.master_datadir)
 
+        dmagent_lockfile = "/tmp/dmagent_pid_lock"
+        if os.path.exists(dmagent_lockfile):
+            logger.info("Clearing Master instance deepmesh agent lock file")
+            os.remove(dmagent_lockfile)
+
         self._startMaster()
 
         logger.info("Commencing forced instance shutdown")
@@ -367,6 +372,11 @@ class GpStart:
 
     ######
     def _remove_postmaster_tmpfile(self, port):
+        dmagent_lockfile = "/tmp/dmagent_pid_lock"
+        if os.path.exists(dmagent_lockfile):
+            logger.info("Clearing Master instance deepmesh agent lock file")
+            os.remove(dmagent_lockfile)
+
         lockfile = "/tmp/.s.PGSQL.%s" % port
         tmpfile_exists = os.path.exists(lockfile)
 

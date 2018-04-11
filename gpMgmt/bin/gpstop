@@ -371,6 +371,11 @@ class GpStop:
                 logger.info("Clearing Master instance lock files")
                 os.remove(lockfile)
 
+                dmagent_lockfile = "/tmp/dmagent_pid_lock"
+                if os.path.exists(dmagent_lockfile):
+                    logger.info("Clearing deepmesh agent lock file")
+                    os.remove(dmagent_lockfile)
+
                 logger.info("Clearing Master instance pid file")
                 os.remove("%s/postmaster.pid" % self.master_datadir)
 
@@ -432,6 +437,12 @@ class GpStop:
                         if os.path.exists(lockfile):
                             logger.info("Clearing segment instance lock files")
                             os.remove(lockfile)
+
+                        dmagent_lockfile = "/tmp/dmagent_pid_lock"
+                        if os.path.exists(dmagent_lockfile):
+                            logger.info("Clearing deepmesh agent lock file")
+                            os.remove(dmagent_lockfile)
+
         logger.info('Attempting forceful termination of any leftover master process')
         (succeeded, mypid, file_datadir) = pg.ReadPostmasterTempFile.local("Read master tmp file",
                                                                            self.dburl.pgport).getResults()

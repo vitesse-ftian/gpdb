@@ -1291,6 +1291,8 @@ CREATE_QD_DB () {
 		fi
 		BACKOUT_COMMAND "$RM -f /tmp/.s.PGSQL.${GP_PORT}*"
 		BACKOUT_COMMAND "$ECHO \"Removing Master lock files\""
+		BACKOUT_COMMAND "$RM -f /tmp/dmagent_pid_lock"
+		BACKOUT_COMMAND "$ECHO \"Removing Master deepmesh agent lock file\""
 		BACKOUT_COMMAND "$RM -f ${GP_DIR}.log"
 		BACKOUT_COMMAND "$ECHO Removing Master log file"
 		BACKOUT_COMMAND "if [ -d $GP_DIR ]; then $EXPORT_LIB_PATH;export PGPORT=$GP_PORT; $PG_CTL -D $GP_DIR stop; fi"
