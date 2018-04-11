@@ -148,6 +148,21 @@ static void defaultCancelCheck(void *param)
     ML_CHECK_FOR_INTERRUPTS(transportStates->teardownActive);
 }
 
+/* Logger invoked by DeepMesh client */
+static void defaultLogger(int level, const char *fmt, ...)
+{
+    if (gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG) {
+        char         buf[1024];
+        va_list      args;
+
+        va_start(args, fmt);
+        vsnprintf(buf, 1024, fmt, args);
+        va_end(args);
+
+        elog(level, "%s", buf);
+    }
+}
+
 /* Function readMsgFromConn() is used to read in the next full msg from the given
  * MotionConn.
  *
@@ -725,6 +740,9 @@ SetupDeepMeshInterconnect(EState *estate)
 
     /* set deepmesh operation cancel checker to default one */
     dm_set_cancel_checker(defaultCancelCheck, estate->interconnect_context);
+   
+    /* set deepmesh operation's logger to default one */
+    dm_set_logger(defaultLogger, DEBUG1);
 
     /* Initiate outgoing connections. It will create sender endpoint */
     if (mySlice->parentIndex != -1) {
@@ -1223,27 +1241,6 @@ flushBufferDeepMesh(MotionLayerState *mlStates, ChunkTransportState *transportSt
                 conn->stillActive = false;
                 return false;
             }
-
-/*
-            char buff[2048];
-            void *array[10];
-            size_t size;
-            char **strings;
-            size_t i;
-            char *ptr = buff;
-            int len = 2048;
-
-            size = backtrace (array, 10);
-            strings = backtrace_symbols (array, size);
-
-            for (i = 0; i < size; i++) {
-               int n = snprintf (ptr, len, "%s\n", strings[i]);
-               ptr += n;
-               len -= n;
-            }
-            *ptr = 0;
-            free (strings);
-*/
             ereport(ERROR, (errcode(ERRCODE_GP_INTERCONNECTION_ERROR),
                     errmsg("Interconnect error flush buffer DeepMesh failed"),
                     errdetail("error during dm_send() call (errno %d errmsg %s)."
@@ -1253,6 +1250,9 @@ flushBufferDeepMesh(MotionLayerState *mlStates, ChunkTransportState *transportSt
                                (char*)conn->dmLocalEp.id,
                                (char*)conn->dmPeerEp.id)));
         }
+    } else if (gp_log_interconnect >= GPVARS_VERBOSITY_DEBUG) {
+        elog(DEBUG1, "flushBufferDeepMesh: send to conn sid %ld sender ep %s receiver ep %s successfully",
+                  getDmSessId(), (char*)conn->dmLocalEp.id, (char*)conn->dmPeerEp.id);
     }
 
     conn->tupleCount = 0;
